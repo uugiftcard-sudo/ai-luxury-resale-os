@@ -1,0 +1,88 @@
+name: PPT Generation
+
+on:
+  workflow_dispatch:
+    inputs:
+      deck_type:
+        description: 'Type to generate'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - deck
+          - deck:main
+          - deck:safe
+          - doc:summary
+          - doc:kid
+  push:
+    paths:
+      - 'docs/ppt/**'
+      - 'scripts/generate_*.py'
+
+concurrency:
+  group: ppt-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  generate:
+    name: Generate Documents
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install python-pptx
+        run: pip install python-pptx
+
+      - name: Generate main deck
+        if: inputs.deck_type == 'all' || inputs.deck_type == '' || inputs.deck_type == 'deck'
+        run: npm run deck
+        continue-on-error: true
+
+      - name: Generate Shopify/TikTok deck
+        if: inputs.deck_type == 'all' || inputs.deck_type == '' || inputs.deck_type == 'deck:main'
+        run: npm run deck:main
+        continue-on-error: true
+
+      - name: Generate safe deck
+        if: inputs.deck_type == 'all' || inputs.deck_type == '' || inputs.deck_type == 'deck:safe'
+        run: npm run deck:safe
+        continue-on-error: true
+
+      - name: Generate summary doc
+        if: inputs.deck_type == 'all' || inputs.deck_type == '' || inputs.deck_type == 'doc:summary'
+        run: npm run doc:summary
+        continue-on-error: true
+
+      - name: Generate kid manual doc
+        if: inputs.deck_type == 'all' || inputs.deck_type == '' || inputs.deck_type == 'doc:kid'
+        run: npm run doc:kid
+        continue-on-error: true
+
+      - name: Upload PPT artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-ppt
+          path: docs/ppt/*.pptx
+          retention-days: 7
+
+      - name: Upload docs artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-docs
+          path: docs/*.md
+          retention-days: 7
+
+      - name: Commit generated files
+        if: github.event_name == 'push'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add docs/
+          git diff --staged --quiet || git commit -m "ci: auto-generate docs [skip ci]"
+          git push
