@@ -1,37 +1,22 @@
-name: PPT Generation
+name: PPT Automation
 
 on:
   workflow_dispatch:
-    inputs:
-      deck_type:
-        description: 'Type to generate'
-        required: false
-        default: 'all'
-        type: choice
-        options:
-          - all
-          - deck
-          - deck:main
-          - deck:safe
-          - doc:summary
-          - doc:kid
   push:
     paths:
       - 'docs/ppt/**'
-      - 'scripts/generate_*.py'
-
-concurrency:
-  group: ppt-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
-  generate:
-    name: Generate Documents
+  ppt:
+    name: Generate PPTX Files
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+    timeout-minutes: 30
 
-      - name: Setup Python
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -40,49 +25,34 @@ jobs:
         run: pip install python-pptx
 
       - name: Generate main deck
-        if: inputs.deck_type == 'all' || inputs.deck_type == '' || inputs.deck_type == 'deck'
         run: npm run deck
-        continue-on-error: true
 
       - name: Generate Shopify/TikTok deck
-        if: inputs.deck_type == 'all' || inputs.deck_type == '' || inputs.deck_type == 'deck:main'
         run: npm run deck:main
-        continue-on-error: true
 
       - name: Generate safe deck
-        if: inputs.deck_type == 'all' || inputs.deck_type == '' || inputs.deck_type == 'deck:safe'
         run: npm run deck:safe
-        continue-on-error: true
 
-      - name: Generate summary doc
-        if: inputs.deck_type == 'all' || inputs.deck_type == '' || inputs.deck_type == 'doc:summary'
-        run: npm run doc:summary
-        continue-on-error: true
-
-      - name: Generate kid manual doc
-        if: inputs.deck_type == 'all' || inputs.deck_type == '' || inputs.deck_type == 'doc:kid'
-        run: npm run doc:kid
-        continue-on-error: true
-
-      - name: Upload PPT artifacts
+      - name: Upload main deck
         uses: actions/upload-artifact@v4
+        if: success() || failure()
         with:
-          name: generated-ppt
-          path: docs/ppt/*.pptx
-          retention-days: 7
+          name: pptx-main-deck
+          path: deck.pptx
+          retention-days: 14
 
-      - name: Upload docs artifacts
+      - name: Upload Shopify/TikTok deck
         uses: actions/upload-artifact@v4
+        if: success() || failure()
         with:
-          name: generated-docs
-          path: docs/*.md
-          retention-days: 7
+          name: pptx-shopify-tiktok-deck
+          path: shopify_tiktok.pptx
+          retention-days: 14
 
-      - name: Commit generated files
-        if: github.event_name == 'push'
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add docs/
-          git diff --staged --quiet || git commit -m "ci: auto-generate docs [skip ci]"
-          git push
+      - name: Upload safe deck
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: pptx-safe-deck
+          path: safe.pptx
+          retention-days: 14

@@ -2,154 +2,63 @@ name: Auto Work Agent
 
 on:
   workflow_dispatch:
-    inputs:
-      task:
-        description: 'Task to perform'
-        required: false
-        default: 'status'
-        type: choice
-        options:
-          - status
-          - scan-todos
-          - report
-          - stale-check
   schedule:
     - cron: '0 * * * *'
   issues:
-    types: [opened, labeled]
-  pull_request:
-    types: [opened, review_requested]
+    types: [opened]
 
 permissions:
   contents: read
   issues: write
   pull-requests: write
+  checks: write
 
 jobs:
-  scan-todos:
-    name: Scan TODOs
+  auto-work:
+    name: Scan TODOs & Report
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' && (inputs.task == 'scan-todos' || inputs.task == 'status')
-    outputs:
-      todo_count: ${{ steps.scan.outputs.count }}
-    steps:
-      - uses: actions/checkout@v4
-      - id: scan
-        run: |
-          echo "## TODO/FIXME Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          TODO_COUNT=$(grep -r "TODO\|FIXME\|XXX\|HACK" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" . 2>/dev/null | wc -l | tr -d ' ')
-          echo "count=$TODO_COUNT" >> $GITHUB_OUTPUT
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Found **$TODO_COUNT** TODO/FIXME comments" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          grep -r "TODO\|FIXME\|XXX" --include="*.ts" --include="*.tsx" --include="*.js" . 2>/dev/null | head -30 >> $GITHUB_STEP_SUMMARY || echo "No TODOs found" >> $GITHUB_STEP_SUMMARY
+    timeout-minutes: 20
 
-  report:
-    name: Project Report
-    runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' && inputs.task == 'report'
     steps:
-      - uses: actions/checkout@v4
-      - name: Generate report
-        run: |
-          echo "## Project Status Report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Repository Structure" >> $GITHUB_STEP_SUMMARY
-          echo "| Type | Count |" >> $GITHUB_STEP_SUMMARY
-          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Apps | $(ls apps/ 2>/dev/null | wc -l | tr -d ' ') |" >> $GITHUB_STEP_SUMMARY
-          echo "| Packages | $(ls packages/ 2>/dev/null | wc -l | tr -d ' ') |" >> $GITHUB_STEP_SUMMARY
-          echo "| Services | $(ls services/ 2>/dev/null | wc -l | tr -d ' ') |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Code Stats" >> $GITHUB_STEP_SUMMARY
-          echo "| Type | Files |" >> $GITHUB_STEP_SUMMARY
-          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| TypeScript | $(find . -name "*.ts" -o -name "*.tsx" 2>/dev/null | grep -v node_modules | wc -l | tr -d ' ') |" >> $GITHUB_STEP_SUMMARY
-          echo "| Python | $(find . -name "*.py" 2>/dev/null | grep -v node_modules | wc -l | tr -d ' ') |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          TODO_COUNT=$(grep -r "TODO\|FIXME" --include="*.ts" --include="*.tsx" . 2>/dev/null | wc -l | tr -d ' ')
-          echo "### Open TODOs: **$TODO_COUNT**" >> $GITHUB_STEP_SUMMARY
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-  stale-check:
-    name: Stale Check
-    runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' && inputs.task == 'stale-check'
-    steps:
-      - uses: actions/checkout@v4
-      - name: Check for stale branches
-        run: |
-          echo "## Stale Branches Check" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          git fetch origin
-          for branch in $(git branch -r --format='%(refname:short)' | grep -v HEAD); do
-            last_commit=$(git log -1 --format='%ci' origin/$branch 2>/dev/null)
-            echo "- $branch: last commit $last_commit" >> $GITHUB_STEP_SUMMARY
-          done
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
 
-  auto-comment:
-    name: Auto Comment
-    runs-on: ubuntu-latest
-    if: github.event_name == 'issues' && github.event.action == 'opened'
-    steps:
-      - name: Auto comment on issue
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Scan for TODO/FIXME comments
+        id: scan
+        run: |
+          TODO_COUNT=$(grep -r -E "(TODO|FIXME|XXX):" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --include="*.md" . 2>/dev/null | grep -v node_modules | wc -l | tr -d ' ')
+          echo "todo_count=$TODO_COUNT" >> "$GITHUB_OUTPUT"
+
+          grep -r -E "(TODO|FIXME|XXX):" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --include="*.md" . 2>/dev/null | grep -v node_modules | head -30 > todos.txt
+          echo "todos_file=todos.txt" >> "$GITHUB_OUTPUT"
+
+      - name: Post comment on issue
+        if: github.event_name == 'issues'
         uses: actions/github-script@v7
         with:
           script: |
-            const issue = context.payload.issue;
-            const labels = issue.labels.map(l => l.name);
-            
-            let comment = 'Thank you for your issue! ';
-            
-            if (labels.includes('bug')) {
-              comment += '🐛 We will investigate this bug shortly.';
-            } else if (labels.includes('enhancement')) {
-              comment += '🚀 Thank you for your enhancement request!';
-            } else if (labels.includes('question')) {
-              comment += '❓ We will answer your question soon.';
-            } else if (labels.includes('help wanted')) {
-              comment += '🤝 Thanks for reaching out! We appreciate your interest.';
-            } else {
-              comment += '📋 We will review and respond shortly.';
-            }
-            
             github.rest.issues.createComment({
-              issue_number: issue.number,
+              issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: comment
-            });
+              body: `## Auto Work Agent Report\n\n\`${{ steps.scan.outputs.todo_count }}\` open TODO/FIXME items found in the codebase.\n\nA full scan has been queued.`
+            })
 
-  pr-auto-comment:
-    name: PR Auto Comment
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.action == 'opened'
-    steps:
-      - name: Welcome PR
-        uses: actions/github-script@v7
+      - name: Upload TODO report
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
         with:
-          script: |
-            const pr = context.payload.pull_request;
-            const author = pr.user.login;
-            
-            github.rest.issues.createComment({
-              issue_number: pr.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `Thanks @${author}! We will review your PR shortly.\n\nPlease ensure your PR passes CI checks.`
-            });
-
-  hourly-status:
-    name: Hourly Status
-    runs-on: ubuntu-latest
-    if: github.event_name == 'schedule'
-    steps:
-      - uses: actions/checkout@v4
-      - name: Hourly check
-        run: |
-          echo "## Hourly Status - $(date -u '+%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ System operational" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          TODO_COUNT=$(grep -r "TODO\|FIXME" --include="*.ts" --include="*.tsx" . 2>/dev/null | wc -l | tr -d ' ')
-          echo "📋 Open TODOs: **$TODO_COUNT**" >> $GITHUB_STEP_SUMMARY
+          name: todo-report
+          path: todos.txt
+          retention-days: 7
