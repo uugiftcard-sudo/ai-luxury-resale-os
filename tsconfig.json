@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@luxury/db": ["packages/db/src/index.ts"],
+      "@luxury/agents": ["packages/agents/src/index.ts"],
+      "@luxury/product-proof": ["services/product-proof/src/index.ts"],
+      "@luxury/listing-crosspost": ["services/listing-crosspost/src/index.ts"],
+      "@luxury/content-live": ["services/content-live/src/index.ts"],
+      "@luxury/video-factory": ["services/video-factory/src/index.ts"],
+      "@luxury/sourcing-engine": ["services/sourcing-engine/src/index.ts"],
+      "@luxury/order-fulfillment": ["services/order-fulfillment/src/index.ts"],
+      "@luxury/live-ops": ["services/live-ops/src/index.ts"],
+      "@luxury/platform-connectors": ["services/platform-connectors/src/index.ts"],
+      "@luxury/acquisition-growth": ["services/acquisition-growth/src/index.ts"],
+      "@luxury/customer-support-crm": ["services/customer-support-crm/src/index.ts"],
+      "@luxury/risk-legal": ["services/risk-legal/src/index.ts"],
+      "@luxury/finance-analytics": ["services/finance-analytics/src/index.ts"],
+      "@luxury/community-growth": ["services/community-growth/src/index.ts"]
+    }
+  },
+  "include": [
+    "apps/**/*.ts",
+    "services/**/*.ts",
+    "packages/**/*.ts",
+    "scripts/**/*.ts"
+  ]
+}

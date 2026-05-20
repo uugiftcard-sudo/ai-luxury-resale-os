@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+docs/ppt/*.pptx
+!docs/ppt/Shopify_TikTok_AI_Luxury_Resale_OS_SAFE.pptx
+.env
+.env.*
+!.env.example
+coverage/
+.cache/
+tmp/
+__pycache__/
+*.pyc

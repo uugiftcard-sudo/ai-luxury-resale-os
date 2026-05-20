@@ -1,0 +1,27 @@
+{
+  "name": "ai-luxury-resale-os",
+  "version": "0.1.0",
+  "private": true,
+  "description": "UK + Hong Kong AI one-person luxury resale operating system monorepo.",
+  "type": "module",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "demo": "tsx scripts/demo.ts",
+    "test:scenarios": "tsx scripts/run-scenarios.ts",
+    "deck": "python3 scripts/generate_ppt.py",
+    "deck:main": "python3 scripts/generate_shopify_tiktok_ppt.py",
+    "deck:safe": "/Users/rubykan/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 scripts/generate_safe_ppt.py",
+    "doc:summary": "/Users/rubykan/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 scripts/generate_summary_doc.py",
+    "doc:kid": "/Users/rubykan/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 scripts/generate_kid_manual_doc.py"
+  },
+  "workspaces": [
+    "apps/*",
+    "services/*",
+    "packages/*"
+  ],
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
