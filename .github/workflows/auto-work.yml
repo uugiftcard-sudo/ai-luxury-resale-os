@@ -1,9 +1,37 @@
 name: Auto Work Agent
 
+# ── Triggers ──────────────────────────────────────────────────────────────────
 on:
-  workflow_dispatch:
+  # Hourly autonomous run
   schedule:
     - cron: '0 * * * *'
+
+  # Manual trigger (with optional inputs)
+  workflow_dispatch:
+    inputs:
+      market:
+        description: 'Market to run (UK, HK, or all)'
+        required: false
+        default: 'all'
+        type: choice
+        options: ['all', 'UK', 'HK']
+      agents:
+        description: 'Comma-separated agent IDs (default: all)'
+        required: false
+        default: ''
+        type: string
+      dry_run:
+        description: 'Dry run (no GitHub comment posted)'
+        required: false
+        type: boolean
+        default: false
+      post_comment:
+        description: 'Post report as issue comment'
+        required: false
+        type: boolean
+        default: true
+
+  # React when a new issue is opened
   issues:
     types: [opened]
 
@@ -12,18 +40,35 @@ permissions:
   issues: write
   pull-requests: write
   checks: write
+  id-token: write   # needed for OIDC token fetch if future steps require it
+
+env:
+  NODE_OPTIONS: '--enable-source-maps'
+
+# ── Concurrency ────────────────────────────────────────────────────────────────
+# Only one auto-work run at a time; cancel any in-progress run when a new one fires
+concurrency:
+  group: auto-work-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  auto-work:
-    name: Scan TODOs & Report
+  # ════════════════════════════════════════════════════════════════════════════
+  # AGENT JOBS — each market runs its own set of agents in parallel
+  # ════════════════════════════════════════════════════════════════════════════
+  agent-uk:
+    name: 🇬🇧 UK Market Agent
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
+    # Skip on scheduled runs if dry_run is not set via env
+    if: inputs.market == 'all' || inputs.market == 'UK' || github.event_name == 'schedule'
+    outputs:
+      json_result: ${{ steps.run.outputs.json }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -34,26 +79,115 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Scan for TODO/FIXME comments
+      - name: Run UK agents
+        id: run
+        run: |
+          ARGS="--market UK"
+          if [ -n "${{ inputs.agents }}" ]; then
+            ARGS="$ARGS --agents ${{ inputs.agents }}"
+          fi
+          if [ '${{ inputs.dry_run }}' == 'true' ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          ARGS="$ARGS --json"
+
+          echo "json=$(npm run agent:run -- $ARGS | tee /dev/stderr)" >> "$GITHUB_OUTPUT"
+        shell: bash
+
+      - name: Upload UK artifact
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: uk-agent-report
+          path: uk-report.json
+          retention-days: 3
+
+  agent-hk:
+    name: 🇭🇰 HK Market Agent
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    if: inputs.market == 'all' || inputs.market == 'HK' || github.event_name == 'schedule'
+    outputs:
+      json_result: ${{ steps.run.outputs.json }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run HK agents
+        id: run
+        run: |
+          ARGS="--market HK"
+          if [ -n "${{ inputs.agents }}" ]; then
+            ARGS="$ARGS --agents ${{ inputs.agents }}"
+          fi
+          if [ '${{ inputs.dry_run }}' == 'true' ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          ARGS="$ARGS --json"
+
+          echo "json=$(npm run agent:run -- $ARGS | tee /dev/stderr)" >> "$GITHUB_OUTPUT"
+        shell: bash
+
+      - name: Upload HK artifact
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: hk-agent-report
+          path: hk-report.json
+          retention-days: 3
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # SCAN JOB — TODO/FIXME comment scanner (runs after agent jobs)
+  # ════════════════════════════════════════════════════════════════════════════
+  scan-todos:
+    name: 🔍 Scan TODOs & Risk Flags
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [agent-uk, agent-hk]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan TODO/FIXME comments
         id: scan
         run: |
-          TODO_COUNT=$(grep -r -E "(TODO|FIXME|XXX):" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --include="*.md" . 2>/dev/null | grep -v node_modules | wc -l | tr -d ' ')
+          TODO_COUNT=$(grep -r -E "(TODO|FIXME|XXX):" \
+            --include="*.ts" --include="*.tsx" \
+            --include="*.js" --include="*.jsx" \
+            --include="*.md" . 2>/dev/null \
+            | grep -v node_modules | wc -l | tr -d ' ')
           echo "todo_count=$TODO_COUNT" >> "$GITHUB_OUTPUT"
 
-          grep -r -E "(TODO|FIXME|XXX):" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --include="*.md" . 2>/dev/null | grep -v node_modules | head -30 > todos.txt
+          grep -r -E "(TODO|FIXME|XXX):" \
+            --include="*.ts" --include="*.tsx" \
+            --include="*.js" --include="*.jsx" \
+            --include="*.md" . 2>/dev/null \
+            | grep -v node_modules | sort | uniq -c | sort -rn | head -20 \
+            > todos.txt
           echo "todos_file=todos.txt" >> "$GITHUB_OUTPUT"
 
-      - name: Post comment on issue
-        if: github.event_name == 'issues'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `## Auto Work Agent Report\n\n\`${{ steps.scan.outputs.todo_count }}\` open TODO/FIXME items found in the codebase.\n\nA full scan has been queued.`
-            })
+          # Also scan for risk keywords
+          grep -rniE "(counterfeit|fake|replica|1:1|unbranded|unauthorised)" \
+            --include="*.ts" --include="*.tsx" \
+            --include="*.js" --include="*.jsx" . 2>/dev/null \
+            | grep -v node_modules | grep -v "\.d\.ts" | head -20 \
+            > risk-keywords.txt
+          echo "risk_file=risk-keywords.txt" >> "$GITHUB_OUTPUT"
 
       - name: Upload TODO report
         uses: actions/upload-artifact@v4
@@ -62,3 +196,133 @@ jobs:
           name: todo-report
           path: todos.txt
           retention-days: 7
+
+      - name: Upload risk keyword scan
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: risk-keyword-scan
+          path: risk-keywords.txt
+          retention-days: 7
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # SUMMARY JOB — runs after all agents + scan complete
+  # ════════════════════════════════════════════════════════════════════════════
+  summary:
+    name: 📋 Post Summary Comment
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [agent-uk, agent-hk, scan-todos]
+    if: always() && github.event_name != 'schedule'
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Build & post summary comment
+        uses: actions/github-script@v7
+        if: inputs.post_comment != 'false'
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            function readArtifact(name) {
+              try {
+                const dir = path.join('artifacts', name);
+                if (fs.existsSync(dir)) {
+                  const files = fs.readdirSync(dir);
+                  if (files.length > 0) {
+                    return JSON.parse(fs.readFileSync(path.join(dir, files[0]), 'utf8'));
+                  }
+                }
+              } catch {}
+              return null;
+            }
+
+            const ukReport = readArtifact('uk-agent-report');
+            const hkReport = readArtifact('hk-agent-report');
+            const todoCount = '${{ needs.scan-todos.outputs.todo_count }}';
+
+            function agentSummary(agents) {
+              if (!agents) return '_No data_';
+              return agents.map(a => {
+                const icon = a.status === 'done' ? '✅' : a.status === 'error' ? '❌' : '⏭️';
+                let line = `${icon} **${a.agentId}**`;
+                if (a.market) line += ` [${a.market}]`;
+                line += ` — ${a.summary || a.status}`;
+                if (a.escalations?.length) {
+                  line += '\n   ' + a.escalations.slice(0, 2).map(e => '⚠️ ' + e).join('\n   ');
+                }
+                return line;
+              }).join('\n');
+            }
+
+            const body = [
+              '## 🤖 Auto Work Agent Report',
+              '',
+              `> Triggered: ${new Date().toISOString()} | Run by: \`${context.actor}\``,
+              '',
+              '### 🇬🇧 UK Market',
+              agentSummary(ukReport?.agents),
+              '',
+              '### 🇭🇰 HK Market',
+              agentSummary(hkReport?.agents),
+              '',
+              '### 🔍 Codebase Scan',
+              `- **TODO/FIXME items:** ${todoCount}`,
+              '',
+              '### ⚡ Next Actions',
+              (ukReport?.agents || hkReport?.agents || [])
+                .flatMap(a => a.escalations || [])
+                .slice(0, 5)
+                .map(e => `- ⚠️ ${e}`)
+                .join('\n') || '_No escalations_',
+              '',
+              '> _Report generated automatically by the Auto Work Agent workflow._',
+            ].join('\n');
+
+            if (context.payload.issue) {
+              await github.rest.issues.createComment({
+                issue_number: context.payload.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body
+              });
+            } else if (context.payload.pull_request) {
+              await github.rest.issues.createComment({
+                issue_number: context.payload.pull_request.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body
+              });
+            } else {
+              core.notice('No issue or PR context — comment not posted (use workflow_dispatch to post).');
+            }
+
+      - name: Post comment on issue trigger
+        if: github.event_name == 'issues'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const todoCount = '${{ needs.scan-todos.outputs.todo_count }}';
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🤖 Auto Work Agent Report\n\nThis issue triggered the hourly agent run.\n\n**${todoCount}** TODO/FIXME items found in the codebase.\n\nFull report available in the workflow run artifacts.`
+            });
+
+      - name: Summary check run conclusion
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { needs } = context;
+            const failedJobs = ['agent-uk', 'agent-hk', 'scan-todos']
+              .filter(name => needs[name]?.result === 'failure');
+
+            if (failedJobs.length > 0) {
+              core.warning(`Failed jobs: ${failedJobs.join(', ')}`);
+            }
