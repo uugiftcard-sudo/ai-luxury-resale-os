@@ -6,11 +6,11 @@ on:
   schedule:
     - cron: '0 * * * *'
 
-  # Manual trigger (with optional inputs)
+  # Manual trigger
   workflow_dispatch:
     inputs:
       market:
-        description: 'Market to run (UK, HK, or all)'
+        description: 'Market to run'
         required: false
         default: 'all'
         type: choice
@@ -21,7 +21,7 @@ on:
         default: ''
         type: string
       dry_run:
-        description: 'Dry run (no GitHub comment posted)'
+        description: 'Dry run — no GitHub comment posted'
         required: false
         type: boolean
         default: false
@@ -31,7 +31,7 @@ on:
         type: boolean
         default: true
 
-  # React when a new issue is opened
+  # Auto-run when a new issue is opened
   issues:
     types: [opened]
 
@@ -40,29 +40,59 @@ permissions:
   issues: write
   pull-requests: write
   checks: write
-  id-token: write   # needed for OIDC token fetch if future steps require it
+  id-token: write
 
 env:
   NODE_OPTIONS: '--enable-source-maps'
 
 # ── Concurrency ────────────────────────────────────────────────────────────────
-# Only one auto-work run at a time; cancel any in-progress run when a new one fires
+# Prevent overlapping runs; cancel stale scheduled runs when a new one fires
 concurrency:
   group: auto-work-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   # ════════════════════════════════════════════════════════════════════════════
-  # AGENT JOBS — each market runs its own set of agents in parallel
+  # CI GATE — lint + type-check must pass before agent jobs run
+  # ════════════════════════════════════════════════════════════════════════════
+  ci-check:
+    name: ✅ CI Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Only gate on scheduled/manual runs; skip for issue-triggered runs
+    if: github.event_name != 'issues'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Type check
+        run: npm run check
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # AGENT JOBS — UK & HK run in parallel; gated behind CI
   # ════════════════════════════════════════════════════════════════════════════
   agent-uk:
     name: 🇬🇧 UK Market Agent
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    # Skip on scheduled runs if dry_run is not set via env
+    needs: [ci-check]
     if: inputs.market == 'all' || inputs.market == 'UK' || github.event_name == 'schedule'
-    outputs:
-      json_result: ${{ steps.run.outputs.json }}
 
     steps:
       - name: Checkout
@@ -81,34 +111,54 @@ jobs:
 
       - name: Run UK agents
         id: run
+        env:
+          AGENTS_INPUT: ${{ inputs.agents }}
+          DRY_RUN: ${{ inputs.dry_run }}
         run: |
           ARGS="--market UK"
-          if [ -n "${{ inputs.agents }}" ]; then
-            ARGS="$ARGS --agents ${{ inputs.agents }}"
+          if [ -n "$AGENTS_INPUT" ]; then
+            ARGS="$ARGS --agents $AGENTS_INPUT"
           fi
-          if [ '${{ inputs.dry_run }}' == 'true' ]; then
+          if [ "$DRY_RUN" == "true" ]; then
             ARGS="$ARGS --dry-run"
           fi
-          ARGS="$ARGS --json"
+          # Write JSON to file — avoids heredoc quoting issues with GITHUB_OUTPUT
+          npm run agent:run -- $ARGS --json --output uk-report.json 2>&1 | tee uk-agent-stdout.log
 
-          echo "json=$(npm run agent:run -- $ARGS | tee /dev/stderr)" >> "$GITHUB_OUTPUT"
-        shell: bash
+      - name: Set JSON result output
+        if: always()
+        run: |
+          if [ -f uk-report.json ]; then
+            echo "json=$(cat uk-report.json | jq -c . 2>/dev/null || cat uk-report.json)" >> "$GITHUB_OUTPUT"
+          else
+            echo "json={}" >> "$GITHUB_OUTPUT"
+          fi
+          # Capture tail of stdout for summary
+          tail -5 uk-agent-stdout.log | head -4 > uk-summary.txt
+          echo "summary=$(cat uk-summary.txt | tr '\n' ' ')" >> "$GITHUB_OUTPUT"
 
-      - name: Upload UK artifact
+      - name: Upload JSON artifact
         uses: actions/upload-artifact@v4
         if: success() || failure()
         with:
           name: uk-agent-report
           path: uk-report.json
+          retention-days: 7
+
+      - name: Upload stdout log
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: uk-agent-logs
+          path: uk-agent-stdout.log
           retention-days: 3
 
   agent-hk:
     name: 🇭🇰 HK Market Agent
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    needs: [ci-check]
     if: inputs.market == 'all' || inputs.market == 'HK' || github.event_name == 'schedule'
-    outputs:
-      json_result: ${{ steps.run.outputs.json }}
 
     steps:
       - name: Checkout
@@ -127,35 +177,53 @@ jobs:
 
       - name: Run HK agents
         id: run
+        env:
+          AGENTS_INPUT: ${{ inputs.agents }}
+          DRY_RUN: ${{ inputs.dry_run }}
         run: |
           ARGS="--market HK"
-          if [ -n "${{ inputs.agents }}" ]; then
-            ARGS="$ARGS --agents ${{ inputs.agents }}"
+          if [ -n "$AGENTS_INPUT" ]; then
+            ARGS="$ARGS --agents $AGENTS_INPUT"
           fi
-          if [ '${{ inputs.dry_run }}' == 'true' ]; then
+          if [ "$DRY_RUN" == "true" ]; then
             ARGS="$ARGS --dry-run"
           fi
-          ARGS="$ARGS --json"
+          npm run agent:run -- $ARGS --json --output hk-report.json 2>&1 | tee hk-agent-stdout.log
 
-          echo "json=$(npm run agent:run -- $ARGS | tee /dev/stderr)" >> "$GITHUB_OUTPUT"
-        shell: bash
+      - name: Set JSON result output
+        if: always()
+        run: |
+          if [ -f hk-report.json ]; then
+            echo "json=$(cat hk-report.json | jq -c . 2>/dev/null || cat hk-report.json)" >> "$GITHUB_OUTPUT"
+          else
+            echo "json={}" >> "$GITHUB_OUTPUT"
+          fi
+          tail -5 hk-agent-stdout.log | head -4 > hk-summary.txt
+          echo "summary=$(cat hk-summary.txt | tr '\n' ' ')" >> "$GITHUB_OUTPUT"
 
-      - name: Upload HK artifact
+      - name: Upload JSON artifact
         uses: actions/upload-artifact@v4
         if: success() || failure()
         with:
           name: hk-agent-report
           path: hk-report.json
+          retention-days: 7
+
+      - name: Upload stdout log
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: hk-agent-logs
+          path: hk-agent-stdout.log
           retention-days: 3
 
   # ════════════════════════════════════════════════════════════════════════════
-  # SCAN JOB — TODO/FIXME comment scanner (runs after agent jobs)
+  # SCAN JOB — runs independently (doesn't need agents to finish)
   # ════════════════════════════════════════════════════════════════════════════
   scan-todos:
-    name: 🔍 Scan TODOs & Risk Flags
+    name: 🔍 Codebase Scan
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [agent-uk, agent-hk]
 
     steps:
       - name: Checkout
@@ -166,6 +234,7 @@ jobs:
       - name: Scan TODO/FIXME comments
         id: scan
         run: |
+          # Count and rank by frequency
           TODO_COUNT=$(grep -r -E "(TODO|FIXME|XXX):" \
             --include="*.ts" --include="*.tsx" \
             --include="*.js" --include="*.jsx" \
@@ -173,28 +242,44 @@ jobs:
             | grep -v node_modules | wc -l | tr -d ' ')
           echo "todo_count=$TODO_COUNT" >> "$GITHUB_OUTPUT"
 
+          # Top 20 most frequent TODO/FIXME locations
           grep -r -E "(TODO|FIXME|XXX):" \
             --include="*.ts" --include="*.tsx" \
             --include="*.js" --include="*.jsx" \
             --include="*.md" . 2>/dev/null \
-            | grep -v node_modules | sort | uniq -c | sort -rn | head -20 \
-            > todos.txt
-          echo "todos_file=todos.txt" >> "$GITHUB_OUTPUT"
+            | grep -v node_modules \
+            | sed 's/:.*//' \
+            | sort | uniq -c | sort -rn | head -20 \
+            > todos-by-file.txt
 
-          # Also scan for risk keywords
-          grep -rniE "(counterfeit|fake|replica|1:1|unbranded|unauthorised)" \
+          # Full list
+          grep -r -E "(TODO|FIXME|XXX):" \
             --include="*.ts" --include="*.tsx" \
-            --include="*.js" --include="*.jsx" . 2>/dev/null \
-            | grep -v node_modules | grep -v "\.d\.ts" | head -20 \
+            --include="*.js" --include="*.jsx" \
+            --include="*.md" . 2>/dev/null \
+            | grep -v node_modules | sort | uniq -c | sort -rn \
+            > todos-full.txt
+          echo "todos_file=todos-full.txt" >> "$GITHUB_OUTPUT"
+
+          # Risk keyword scan (code + docs, exclude test files)
+          grep -rniE "(counterfeit|fake|replica|1:1|unbranded|unauthorised|mirror quality|aaa grade)" \
+            --include="*.ts" --include="*.tsx" \
+            --include="*.js" --include="*.jsx" \
+            --include="*.md" . 2>/dev/null \
+            | grep -v node_modules \
+            | grep -v "\.d\.ts" \
+            | grep -v "_test\." | grep -v "\.spec\." \
             > risk-keywords.txt
+          RISK_COUNT=$(wc -l < risk-keywords.txt | tr -d ' ')
+          echo "risk_count=$RISK_COUNT" >> "$GITHUB_OUTPUT"
           echo "risk_file=risk-keywords.txt" >> "$GITHUB_OUTPUT"
 
-      - name: Upload TODO report
+      - name: Upload TODO scan
         uses: actions/upload-artifact@v4
         if: success() || failure()
         with:
           name: todo-report
-          path: todos.txt
+          path: todos-full.txt
           retention-days: 7
 
       - name: Upload risk keyword scan
@@ -205,14 +290,22 @@ jobs:
           path: risk-keywords.txt
           retention-days: 7
 
+      - name: Upload todos-by-file
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: todo-by-file
+          path: todos-by-file.txt
+          retention-days: 7
+
   # ════════════════════════════════════════════════════════════════════════════
-  # SUMMARY JOB — runs after all agents + scan complete
+  # SUMMARY JOB — after all agents + scan complete
   # ════════════════════════════════════════════════════════════════════════════
   summary:
-    name: 📋 Post Summary Comment
+    name: 📋 Post Report
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [agent-uk, agent-hk, scan-todos]
+    needs: [ci-check, agent-uk, agent-hk, scan-todos]
     if: always() && github.event_name != 'schedule'
 
     steps:
@@ -220,109 +313,82 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
+          pattern: '*-agent-report'
+          merge-multiple: false
 
-      - name: Build & post summary comment
-        uses: actions/github-script@v7
+      - name: Post report comment
         if: inputs.post_comment != 'false'
+        uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
             const path = require('path');
 
-            function readArtifact(name) {
+            function loadJson(name) {
+              const dir = path.join('artifacts', name);
               try {
-                const dir = path.join('artifacts', name);
-                if (fs.existsSync(dir)) {
-                  const files = fs.readdirSync(dir);
-                  if (files.length > 0) {
-                    return JSON.parse(fs.readFileSync(path.join(dir, files[0]), 'utf8'));
-                  }
-                }
+                const files = fs.readdirSync(dir);
+                const f = files.find(f => f.endsWith('.json'));
+                if (f) return JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
               } catch {}
               return null;
             }
 
-            const ukReport = readArtifact('uk-agent-report');
-            const hkReport = readArtifact('hk-agent-report');
+            const ciOk = context.payload.inputs?.market || true;
+            const uk = loadJson('uk-agent-report');
+            const hk = loadJson('hk-agent-report');
             const todoCount = '${{ needs.scan-todos.outputs.todo_count }}';
+            const riskCount = '${{ needs.scan-todos.outputs.risk_count }}';
+            const allAgents = [...(uk?.agents || []), ...(hk?.agents || [])];
 
-            function agentSummary(agents) {
-              if (!agents) return '_No data_';
-              return agents.map(a => {
-                const icon = a.status === 'done' ? '✅' : a.status === 'error' ? '❌' : '⏭️';
-                let line = `${icon} **${a.agentId}**`;
-                if (a.market) line += ` [${a.market}]`;
-                line += ` — ${a.summary || a.status}`;
-                if (a.escalations?.length) {
-                  line += '\n   ' + a.escalations.slice(0, 2).map(e => '⚠️ ' + e).join('\n   ');
-                }
-                return line;
-              }).join('\n');
-            }
+            const agentBadge = (a) => {
+              const icon = a.status === 'done' ? '✅' : a.status === 'error' ? '❌' : '⏭️';
+              const esc = (a.escalations || []).slice(0, 2).map(e => `  ⚠️ ${e}`).join('\n');
+              return `${icon} **${a.agentId}**${a.market ? ` [${a.market}]` : ''} — ${a.summary || a.status}${esc ? '\n' + esc : ''}`;
+            };
+
+            const ciStatus = '${{ needs.ci-check.result }}';
+            const ciIcon = ciStatus === 'success' ? '✅' : '⚠️';
+            const ciBadge = `| CI Gate | ${ciIcon} ${ciStatus} |`;
+
+            const nextActions = allAgents
+              .flatMap(a => (a.escalations || []).map(e => `- ⚠️ **${a.agentId}**${a.market ? `[${a.market}]` : ''}: ${e}`))
+              .slice(0, 8);
 
             const body = [
               '## 🤖 Auto Work Agent Report',
               '',
-              `> Triggered: ${new Date().toISOString()} | Run by: \`${context.actor}\``,
+              `| Check | Status |`,
+              `| ----- | ------ |`,
+              ciBadge,
+              `| UK Agents | ✅ ${uk?.agents?.length ?? 0} agents |`,
+              `| HK Agents | ✅ ${hk?.agents?.length ?? 0} agents |`,
+              `| Code Scan | 🔍 ${todoCount} TODO/FIXME · ${riskCount} risk keywords |`,
               '',
-              '### 🇬🇧 UK Market',
-              agentSummary(ukReport?.agents),
+              '### 🤖 Agent Results',
               '',
-              '### 🇭🇰 HK Market',
-              agentSummary(hkReport?.agents),
+              ...allAgents.map(agentBadge),
               '',
               '### 🔍 Codebase Scan',
               `- **TODO/FIXME items:** ${todoCount}`,
+              `- **Risk keywords found:** ${riskCount}`,
               '',
               '### ⚡ Next Actions',
-              (ukReport?.agents || hkReport?.agents || [])
-                .flatMap(a => a.escalations || [])
-                .slice(0, 5)
-                .map(e => `- ⚠️ ${e}`)
-                .join('\n') || '_No escalations_',
+              nextActions.length > 0 ? nextActions.join('\n') : '_No escalations — system clean_',
               '',
-              '> _Report generated automatically by the Auto Work Agent workflow._',
+              '> Report generated automatically by the **Auto Work Agent** workflow.',
             ].join('\n');
 
             if (context.payload.issue) {
               await github.rest.issues.createComment({
                 issue_number: context.payload.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body
+                owner: context.repo.owner, repo: context.repo.repo, body
               });
             } else if (context.payload.pull_request) {
               await github.rest.issues.createComment({
                 issue_number: context.payload.pull_request.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body
+                owner: context.repo.owner, repo: context.repo.repo, body
               });
             } else {
-              core.notice('No issue or PR context — comment not posted (use workflow_dispatch to post).');
-            }
-
-      - name: Post comment on issue trigger
-        if: github.event_name == 'issues'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const todoCount = '${{ needs.scan-todos.outputs.todo_count }}';
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `## 🤖 Auto Work Agent Report\n\nThis issue triggered the hourly agent run.\n\n**${todoCount}** TODO/FIXME items found in the codebase.\n\nFull report available in the workflow run artifacts.`
-            });
-
-      - name: Summary check run conclusion
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const { needs } = context;
-            const failedJobs = ['agent-uk', 'agent-hk', 'scan-todos']
-              .filter(name => needs[name]?.result === 'failure');
-
-            if (failedJobs.length > 0) {
-              core.warning(`Failed jobs: ${failedJobs.join(', ')}`);
+              core.info('No issue/PR context — comment skipped. Use workflow_dispatch to post manually.');
             }

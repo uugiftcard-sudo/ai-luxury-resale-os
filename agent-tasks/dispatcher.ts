@@ -24,129 +24,153 @@ import { runReportAgent } from "./report-agent.js";
 
 import { sampleProducts, sampleProofPacks, sampleSourcingLeads } from "../scripts/sample-data.js";
 
+const ALL_AGENTS = ["sourcing", "listing", "content", "video", "fulfillment", "community", "risk"] as const;
+
 export async function runDispatcher(options: DispatcherOptions = {}): Promise<DispatcherResult> {
   const runId = `run-${Date.now()}`;
   const triggeredBy = options.dryRun ? "dry-run" : "github-actions";
   const start = Date.now();
-  const markets: Market[] = (options.markets?.length ? options.markets : ["UK", "HK"]) as Market[];
-  const agentIds = options.agents ?? ["sourcing", "listing", "content", "video", "fulfillment", "community", "risk"];
 
-  // Shared state collected from each agent
+  const requestedMarkets: Market[] = (options.markets?.length
+    ? options.markets
+    : ["UK", "HK"]) as Market[];
+
+  const requestedAgentIds: string[] = (options.agents?.length
+    ? options.agents
+    : [...ALL_AGENTS]) as string[];
+
+  // Collect results across all markets
   const allAgentResults: AgentResult[] = [];
   const allSourcingItems: SourcingQueueItem[] = [];
   const allListingTasks: ListingTask[] = [];
   const allContentTasks: ContentTask[] = [];
   const allRiskAlerts: RiskAlert[] = [];
 
-  const completedMarkets: Market[] = [];
-  const failedMarkets: Market[] = [];
+  const completedMarkets: string[] = [];
+  const failedMarkets: string[] = [];
 
-  for (const market of markets) {
+  // ── Run per-market in series, agents within each market in parallel ──────
+  for (const market of requestedMarkets) {
     const marketStart = Date.now();
-    const agentResults: AgentResult[] = [];
+    const marketAgentResults: AgentResult[] = [];
+
+    console.log(`[dispatcher] Starting ${market} — agents: ${requestedAgentIds.join(", ")}`);
 
     try {
-      // All agents per market run in parallel
-      const tasks: Promise<void>[] = [];
+      const promises: Promise<void>[] = [];
 
-      // ── Sourcing Agent ──────────────────────────────────────────────────────
-      if (agentIds.includes("sourcing")) {
-        tasks.push(
-          runSourcingAgent(sampleSourcingLeads.filter((l) => l.market === market), market).then(
-            ({ result, watchList, rejectList }) => {
-              agentResults.push(result);
-              allSourcingItems.push(...watchList, ...rejectList);
-            }
-          )
+      // ── Sourcing ───────────────────────────────────────────────────────
+      if (requestedAgentIds.includes("sourcing")) {
+        promises.push(
+          runSourcingAgent(
+            sampleSourcingLeads.filter((l) => l.market === market),
+            market
+          ).then(({ result, buyQueue, watchQueue, rejected }) => {
+            marketAgentResults.push(result);
+            allSourcingItems.push(...buyQueue, ...watchQueue);
+          })
         );
       }
 
-      // ── Listing Agent ──────────────────────────────────────────────────────
-      if (agentIds.includes("listing")) {
+      // ── Listing ───────────────────────────────────────────────────────
+      if (requestedAgentIds.includes("listing")) {
         const proofs = new Map(sampleProofPacks.map((p) => [p.sku, p]));
-        tasks.push(
-          runListingAgent(sampleProducts.filter((p) => p.market === market), proofs, market).then(
-            ({ result, tasks }) => {
-              agentResults.push(result);
-              allListingTasks.push(...tasks);
-            }
-          )
+        promises.push(
+          runListingAgent(
+            sampleProducts.filter((p) => p.market === market),
+            proofs,
+            market
+          ).then(({ result, tasks }) => {
+            marketAgentResults.push(result);
+            allListingTasks.push(...tasks);
+          })
         );
       }
 
-      // ── Content Agent ──────────────────────────────────────────────────────
-      if (agentIds.includes("content")) {
-        tasks.push(
+      // ── Content ───────────────────────────────────────────────────────
+      if (requestedAgentIds.includes("content")) {
+        promises.push(
           runContentAgent(sampleProducts.filter((p) => p.market === market), market).then(
             ({ result, tasks }) => {
-              agentResults.push(result);
+              marketAgentResults.push(result);
               allContentTasks.push(...tasks);
             }
           )
         );
       }
 
-      // ── Video Agent ───────────────────────────────────────────────────────
-      if (agentIds.includes("video")) {
+      // ── Video ─────────────────────────────────────────────────────────
+      if (requestedAgentIds.includes("video")) {
         const proofs = new Map(sampleProofPacks.map((p) => [p.sku, p]));
-        tasks.push(
-          runVideoAgent(sampleProducts.filter((p) => p.market === market), proofs, market).then(
-            ({ result }) => {
-              agentResults.push(result);
-            }
-          )
-        );
-      }
-
-      // ── Fulfilment Agent ─────────────────────────────────────────────────
-      if (agentIds.includes("fulfillment")) {
-        const proofs = new Map(sampleProofPacks.map((p) => [p.sku, p]));
-        tasks.push(
-          runFulfilmentAgent(sampleProducts.filter((p) => p.market === market), proofs, market).then(
-            ({ result }) => {
-              agentResults.push(result);
-            }
-          )
-        );
-      }
-
-      // ── Community Agent ──────────────────────────────────────────────────
-      if (agentIds.includes("community")) {
-        tasks.push(
-          runCommunityAgent(market).then(({ result }) => {
-            agentResults.push(result);
+        promises.push(
+          runVideoAgent(
+            sampleProducts.filter((p) => p.market === market),
+            proofs,
+            market
+          ).then(({ result }) => {
+            marketAgentResults.push(result);
           })
         );
       }
 
-      // ── Risk Agent ───────────────────────────────────────────────────────
-      if (agentIds.includes("risk")) {
+      // ── Fulfilment ────────────────────────────────────────────────────
+      if (requestedAgentIds.includes("fulfillment")) {
         const proofs = new Map(sampleProofPacks.map((p) => [p.sku, p]));
-        tasks.push(
-          runRiskAgent(sampleProducts.filter((p) => p.market === market), proofs, market).then(
-            ({ result, alerts }) => {
-              agentResults.push(result);
-              allRiskAlerts.push(...alerts);
-            }
-          )
+        promises.push(
+          runFulfilmentAgent(
+            sampleProducts.filter((p) => p.market === market),
+            proofs,
+            market
+          ).then(({ result }) => {
+            marketAgentResults.push(result);
+          })
         );
       }
 
-      await Promise.all(tasks);
-
-      // Mark any failed agents
-      for (const r of agentResults) {
-        if (r.status === "error") {
-          failedMarkets.push(market);
-        }
+      // ── Community ────────────────────────────────────────────────────
+      if (requestedAgentIds.includes("community")) {
+        promises.push(
+          runCommunityAgent(market).then(({ result }) => {
+            marketAgentResults.push(result);
+          })
+        );
       }
-      completedMarkets.push(market);
-      allAgentResults.push(...agentResults);
 
-      console.log(`[dispatcher] ${market} done in ${Date.now() - marketStart}ms — ${agentResults.length} agents`);
+      // ── Risk ─────────────────────────────────────────────────────────
+      if (requestedAgentIds.includes("risk")) {
+        const proofs = new Map(sampleProofPacks.map((p) => [p.sku, p]));
+        promises.push(
+          runRiskAgent(
+            sampleProducts.filter((p) => p.market === market),
+            proofs,
+            market
+          ).then(({ result, alerts }) => {
+            marketAgentResults.push(result);
+            allRiskAlerts.push(...alerts);
+          })
+        );
+      }
+
+      // Wait for all agents in this market to finish
+      await Promise.all(promises);
+
+      // Check for errors
+      const errors = marketAgentResults.filter((r) => r.status === "error");
+      if (errors.length > 0) {
+        failedMarkets.push(market);
+        console.error(`[dispatcher] ${market} had ${errors.length} error(s):`, errors.map((e) => e.errors));
+      } else {
+        completedMarkets.push(market);
+      }
+
+      allAgentResults.push(...marketAgentResults);
+      console.log(
+        `[dispatcher] ${market} done in ${Date.now() - marketStart}ms — ${marketAgentResults.length} agents`
+      );
     } catch (err) {
       failedMarkets.push(market);
-      console.error(`[dispatcher] ${market} failed:`, err);
+      const errMsg = String(err);
+      console.error(`[dispatcher] ${market} crashed:`, errMsg);
       allAgentResults.push({
         agentId: "report",
         status: "error",
@@ -154,15 +178,15 @@ export async function runDispatcher(options: DispatcherOptions = {}): Promise<Di
         completedAt: new Date().toISOString(),
         durationMs: Date.now() - marketStart,
         market,
-        errors: [`Market ${market} dispatcher error: ${String(err)}`],
+        errors: [`Market ${market} crashed: ${errMsg}`],
       });
     }
   }
 
-  // ── Report Agent ─────────────────────────────────────────────────────────
+  // ── Report Agent ────────────────────────────────────────────────────────────
   const reportResult = await runReportAgent(
     runId,
-    markets,
+    requestedMarkets as Market[],
     allAgentResults,
     allSourcingItems,
     allListingTasks,
@@ -170,15 +194,14 @@ export async function runDispatcher(options: DispatcherOptions = {}): Promise<Di
     allRiskAlerts
   );
 
-  const totalMs = Date.now() - start;
-
+  // ── Assemble final result ──────────────────────────────────────────────────
   const dispatcherResult: DispatcherResult = {
     runId,
     triggeredBy,
     triggeredAt: new Date(start).toISOString(),
     completedAt: new Date().toISOString(),
-    totalDurationMs: totalMs,
-    markets,
+    totalDurationMs: Date.now() - start,
+    markets: requestedMarkets,
     agents: allAgentResults,
     summary: {
       totalItemsProcessed: allAgentResults.reduce((acc, r) => acc + (r.itemsProcessed ?? 0), 0),
@@ -189,12 +212,6 @@ export async function runDispatcher(options: DispatcherOptions = {}): Promise<Di
       marketsFailed: failedMarkets,
     },
   };
-
-  console.log(`[dispatcher] Full run ${runId} complete in ${totalMs}ms`);
-  console.log(`  Markets: ${completedMarkets.join(", ")}${failedMarkets.length ? ` | Failed: ${failedMarkets.join(", ")}` : ""}`);
-  console.log(`  Total tasks: ${dispatcherResult.summary.totalTasksGenerated}`);
-  console.log(`  Escalations: ${dispatcherResult.summary.totalEscalations}`);
-  console.log(`  Errors: ${dispatcherResult.summary.totalErrors}`);
 
   return dispatcherResult;
 }
