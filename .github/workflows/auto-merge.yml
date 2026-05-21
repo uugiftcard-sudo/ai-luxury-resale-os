@@ -1,0 +1,27 @@
+name: Auto Merge
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    name: Auto Merge PR
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Auto-merge PR
+        uses: actions/automate-community-action@v1
+        with:
+          merge_method: squash
+          delete_branch_on_merge: true
+          do_not_delete_branch_on_merge: false
+          do_not_wait_on_conflict: false

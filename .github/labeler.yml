@@ -1,0 +1,32 @@
+# Labeler configuration — maps file patterns to labels
+# Used by .github/workflows/label-pr.yml
+
+# --- Type labels ---
+feat:
+  - head-branch: ['feat/**', 'feature/**']
+  - any: ['src/**/*.{ts,tsx,js,jsx}']
+
+fix:
+  - head-branch: ['fix/**', 'hotfix/**', 'bugfix/**']
+
+chore:
+  - head-branch: ['chore/**', 'deps/**', 'dependabot/**', 'renovate/**']
+
+docs:
+  - any: ['**/*.md', 'docs/**']
+
+ci:
+  - any: ['.github/**', '**/*.yml', '**/*.yaml']
+
+refactor:
+  - head-branch: ['refactor/**', 'refactor/**']
+
+# --- Scope labels ---
+'area/backend':
+  - any: ['services/**', 'apps/api/**']
+
+'area/frontend':
+  - any: ['apps/web/**', 'apps/mobile/**']
+
+'area/core':
+  - any: ['packages/core/**', 'packages/shared/**']
