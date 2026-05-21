@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: read
+  security-events: write
 
 jobs:
   trivy-scan:
@@ -22,24 +23,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Run Trivy vulnerability scanner
+      - name: Setup Trivy
         uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: fs
-          scan-ref: '.'
-          format: sarif
-          output: trivy-results.sarif
-          severity: HIGH,CRITICAL
-          security-checks: vuln,config,secret
-          exit-code: '1'
 
-      - name: Upload Trivy scan results
+      - name: Run Trivy FS scan
+        run: trivy fs --severity HIGH,CRITICAL --format sarif --output trivy-results.sarif .
+
+      - name: Upload Trivy scan results to Security tab
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
           sarif_file: trivy-results.sarif
+          category: trivy-fs
 
-  secret-scan:
+  gitleaks-scan:
     name: Secret Scan
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -51,7 +48,14 @@ jobs:
           fetch-depth: 0
 
       - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CONFIG_PATH: .gitleaks.toml
+        uses: gitleaks/gitleaks-action@v3
+        with:
+          args: 'detect --source . --config-path .gitleaks.toml --report-path gitleaks-report.sarif --format sarif'
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Gitleaks report
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: gitleaks-report.sarif
+          category: gitleaks

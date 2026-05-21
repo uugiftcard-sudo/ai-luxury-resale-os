@@ -4,6 +4,12 @@ on:
   schedule:
     - cron: '0 6 * * *'
   workflow_dispatch:
+    inputs:
+      debug_mode:
+        description: 'Run in debug mode (dry-run, no changes)'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -22,6 +28,7 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           operations-per-run: 100
+          debug-only: ${{ inputs.debug_mode == true }}
 
           # Issue settings
           days-before-issue-stale: 30
@@ -44,8 +51,7 @@ jobs:
           close-pr-message: |
             This PR has been automatically closed due to inactivity.
 
-          # Exempt settings
-          exempt-issue-labels: pinned,security,enhancement
-          exempt-pr-labels: pinned,security,work-in-progress
+          # Exempt labels — one per line, no commas
+          exempt-issue-labels: pinned|security|enhancement
+          exempt-pr-labels: pinned|security|work-in-progress
           remove-stale-when-updated: true
-          debug-only: false

@@ -1,80 +1,96 @@
-# Gitleaks configuration for .github/workflows/security-scan.yml
-# Scans for secrets, API keys, tokens, and credentials
+# Gitleaks configuration — .github/workflows/security-scan.yml
+# Detects API keys, tokens, private keys, and secrets
 
 [allowlist]
-  description = "Allowlisted secrets for testing or known safe patterns"
-  files = [
-    "(?i)^.*\\.example\\.(json|yaml|yml|toml|env)$",
-    ".*\\.test\\.(ts|js)$",
-    ".*\\.spec\\.(ts|js)$",
+  description = "Allowlisted files and regexes for known safe patterns"
+  paths = [
+    '(?i)^.*\.example\.(json|yaml|yml|toml|env)$',
+    '.*\.test\.(ts|js)$',
+    '.*\.spec\.(ts|js)$',
+    '.*_test\.go$',
+    '.*_spec\.rb$',
   ]
   regexes = [
-    "^<EMAIL>$",
-    "^github_pat_11aaaazzz$",
+    '(?i)<EMAIL>$',
+    '(?i)^test[_-]?pat[_-]?11aaaazzz$',
   ]
 
-[[rules]]
-  id = "github-token"
-  description = "GitHub Token"
-  regex = '''ghp_[0-9a-zA-Z]{36}'''
-  tags = ["key", "GitHub"]
+# ─── Individual Rules ───────────────────────────────────────────────────────
 
 [[rules]]
-  id = "github-fine-grained-token"
-  description = "GitHub Fine-grained Personal Access Token"
-  regex = '''github_pat_[0-9a-zA-Z_]{22,255}'''
-  tags = ["key", "GitHub"]
+id = 'github-token'
+description = 'GitHub Personal Access Token'
+regex = '''ghp_[0-9a-zA-Z]{36}'''
+tags = ['key', 'GitHub']
 
 [[rules]]
-  id = "aws-access-key"
-  description = "AWS Access Key ID"
-  regex = '''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}'''
-  tags = ["key", "AWS"]
+id = 'github-fine-grained-token'
+description = 'GitHub Fine-grained PAT'
+regex = '''github_pat_[0-9a-zA-Z_]{22,255}'''
+tags = ['key', 'GitHub']
 
 [[rules]]
-  id = "aws-secret-key"
-  description = "AWS Secret Access Key"
-  regex = '''(?i)aws(.{0,20})?['\"][0-9a-zA-Z\/+]{40}['\"]'''
-  tags = ["key", "AWS"]
+id = 'aws-access-key-id'
+description = 'AWS Access Key ID'
+regex = '''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}'''
+tags = ['key', 'AWS']
 
 [[rules]]
-  id = "slack-token"
-  description = "Slack Token"
-  regex = '''xox[baprs]-([0-9a-zA-Z]{10,48})?'''
-  tags = ["key", "Slack"]
+id = 'aws-secret-access-key'
+description = 'AWS Secret Access Key'
+regex = '''(?i)aws(.{0,20})?['\"][0-9a-zA-Z\/+]{40}['\"]'''
+tags = ['key', 'AWS']
 
 [[rules]]
-  id = "stripe-key"
-  description = "Stripe API Key"
-  regex = '''sk_live_[0-9a-zA-Z]{24,99}'''
-  tags = ["key", "Stripe"]
+id = 'slack-token'
+description = 'Slack Token'
+regex = '''xox[baprs]-([0-9a-zA-Z]{10,48})'''
+tags = ['key', 'Slack']
 
 [[rules]]
-  id = "openai-api-key"
-  description = "OpenAI API Key"
-  regex = '''sk-[0-9a-zA-Z]{48,}'''
-  tags = ["key", "OpenAI"]
+id = 'stripe-api-key'
+description = 'Stripe API Key'
+regex = '''sk_live_[0-9a-zA-Z]{24,99}'''
+tags = ['key', 'Stripe']
 
 [[rules]]
-  id = "generic-api-key"
-  description = "Generic API Key"
-  regex = '''(?i)(api[_-]?key|apikey|api[_-]?secret|secret[_-]?key)['\"]?\s*[:=]\s*['\"]?[0-9a-zA-Z]{16,64}'''
-  tags = ["key", "API"]
+id = 'openai-api-key'
+description = 'OpenAI API Key'
+regex = '''sk-[0-9a-zA-Z]{48,}'''
+tags = ['key', 'OpenAI']
 
 [[rules]]
-  id = "generic-secret"
-  description = "Generic Secret"
-  regex = '''(?i)(password|passwd|pwd|secret|token|bearer)['\"]?\s*[:=]\s*['\"]?[0-9a-zA-Z!@#$%^&*()_+=\-]{8,64}'''
-  tags = ["secret"]
+id = 'generic-api-key'
+description = 'Generic API Key'
+regex = '''(?i)(api[_-]?key|apikey|api[_-]?secret|secret[_-]?key)\s*[:=]\s*['\"]?[0-9a-zA-Z]{16,64}'''
+tags = ['key', 'API']
 
 [[rules]]
-  id = "private-key"
-  description = "Private Key"
-  regex = '''-----BEGIN (RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY-----'''
-  tags = ["key"]
+id = 'generic-secret'
+description = 'Generic Secret Value'
+regex = '''(?i)(password|passwd|pwd|secret|token|bearer)\s*[:=]\s*['\"]?[0-9a-zA-Z!@#$%^&*()_+=\-]{8,64}'''
+tags = ['secret']
 
 [[rules]]
-  id = "env-variable-secret"
-  description = "Secret stored in env variable"
-  regex = '''(?im)^(export\s+)?(SECRET|PASSWORD|TOKEN|API_KEY|PRIVATE)[_A-Z0-9]*=['\"][^'\"]+['\"]'''
-  tags = ["env"]
+id = 'private-key'
+description = 'Private Key (RSA/EC/DSA/PGP)'
+regex = '''-----BEGIN (RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY-----'''
+tags = ['key']
+
+[[rules]]
+id = 'env-export-secret'
+description = 'Exported env variable containing a secret'
+regex = '''(?im)^(export\s+)?(SECRET|PASSWORD|TOKEN|API_KEY|PRIVATE|ACCESS)[_A-Z0-9]*=['\"][^'\"]{8,}['\"]'''
+tags = ['env']
+
+[[rules]]
+id = 'google-api-key'
+description = 'Google API Key'
+regex = '''AIza[0-9A-Za-z\\-_]{35}'''
+tags = ['key', 'Google']
+
+[[rules]]
+id = 'npm-token'
+description = 'npm Publish Token'
+regex = '''npm_[A-Za-z0-9]{36}'''
+tags = ['key', 'npm']
