@@ -1,0 +1,43 @@
+[
+  {
+    "id": "proof-UK-LUX-001",
+    "sku": "UK-LUX-001",
+    "market": "UK",
+    "sourceRecord": "eBay private seller purchase, invoice saved",
+    "receiptRef": "receipts/uk-lux-001.pdf",
+    "serialOrCode": "recorded in private proof folder",
+    "detailPhotoRefs": [
+      "photos/uk-lux-001-front.jpg",
+      "photos/uk-lux-001-logo.jpg"
+    ],
+    "flawPhotoRefs": [
+      "photos/uk-lux-001-corner-wear.jpg"
+    ],
+    "packingVideoRef": "videos/uk-lux-001-packing.mp4",
+    "parcelWeight": "0.8kg",
+    "trackingRef": "Royal Mail tracked reference pending dispatch",
+    "notes": [
+      "Do not state authorised reseller."
+    ]
+  },
+  {
+    "id": "proof-HK-LUX-001",
+    "sku": "HK-LUX-001",
+    "market": "HK",
+    "sourceRecord": "Local reseller purchase with chat record saved",
+    "serialOrCode": "recorded in private proof folder",
+    "detailPhotoRefs": [
+      "photos/hk-lux-001-front.jpg",
+      "photos/hk-lux-001-label.jpg"
+    ],
+    "flawPhotoRefs": [
+      "photos/hk-lux-001-hardware.jpg"
+    ],
+    "packingVideoRef": "videos/hk-lux-001-packing.mp4",
+    "trackingRef": "SF Express tracking pending dispatch",
+    "paymentProofRef": "payments/hk-lux-001-fps.png",
+    "notes": [
+      "Carousell listing must not use counterfeit-coded wording."
+    ]
+  }
+]
