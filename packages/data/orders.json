@@ -1,0 +1,40 @@
+[
+  {
+    "orderId": "order-uk-001",
+    "sku": "UK-LUX-001",
+    "market": "UK",
+    "platform": "ebay_uk",
+    "customerId": "uk-buyer-1",
+    "paidAmount": {
+      "amount": 395,
+      "currency": "GBP"
+    },
+    "paymentMethod": "platform_checkout",
+    "fulfilmentMethod": "royal_mail",
+    "status": "paid",
+    "requiredEvidence": [
+      "packingVideoRef",
+      "parcelWeight",
+      "trackingRef"
+    ]
+  },
+  {
+    "orderId": "order-hk-001",
+    "sku": "HK-LUX-001",
+    "market": "HK",
+    "platform": "carousell_hk",
+    "customerId": "hk-vip-1",
+    "paidAmount": {
+      "amount": 4800,
+      "currency": "HKD"
+    },
+    "paymentMethod": "fps",
+    "fulfilmentMethod": "sf_express",
+    "status": "paid",
+    "requiredEvidence": [
+      "paymentProofRef",
+      "packingVideoRef",
+      "trackingRef"
+    ]
+  }
+]

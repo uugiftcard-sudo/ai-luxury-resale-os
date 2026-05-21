@@ -401,3 +401,20 @@ export function findForbiddenClaims(text: string): string[] {
     .filter((pattern) => pattern.test(text))
     .map((pattern) => pattern.source);
 }
+
+// Re-export storage helpers
+export type { Store } from "./storage.js";
+export {
+  products,
+  proofPacks,
+  orders,
+  sourcingLeads as leads,
+  customers,
+  liveSessions,
+  listings,
+  videoAssets,
+  crmTasks,
+  seedAll,
+  clearAll,
+  dataSummary
+} from "./storage.js";
