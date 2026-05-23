@@ -59,6 +59,7 @@ export async function runDispatcher(options: DispatcherOptions = {}): Promise<Di
     // Filter data for this market
     const marketProducts = storeData.products.filter((p) => p.market === market);
     const marketProofs = new Map(storeData.proofPacks.filter((p) => p.market === market).map((p) => [p.sku, p]));
+    void marketProofs; // used by downstream agents that may run in-process
     const marketLeads = storeData.sourcingLeads.filter((l) => l.market === market);
 
     console.log(
