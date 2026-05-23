@@ -2,7 +2,7 @@ import * as readline from "readline";
 import { agentsForMarket } from "@luxury/agents";
 import {
   products, proofPacks, orders, leads, customers, liveSessions,
-  seedAll, type Product, type ProofPack, type SourcingLead, type LiveSession
+  seedAll, type Product, type SourcingLead, type LiveSession
 } from "@luxury/db";
 import { auditProofPack, calculateProofScore } from "@luxury/product-proof";
 import { generateListings } from "@luxury/listing-crosspost";

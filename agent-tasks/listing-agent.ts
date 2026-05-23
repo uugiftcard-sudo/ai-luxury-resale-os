@@ -41,6 +41,7 @@ export async function runListingAgent(
       product,
       platforms: listings.map((l) => l.platform).filter(Boolean) as string[],
       priority,
+      reason: listings.length > 0 ? "Proof ready, listings generated" : "Proof incomplete, withheld",
     });
 
     // Compliance check: reject any listing with counterfeit/resale-restricted wording
