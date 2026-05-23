@@ -1,3 +1,10 @@
+/**
+ * CLOTH Control Center — entry point
+ *
+ * Re-exports:
+ *  • buildControlCenterSnapshot — Node.js TUI dashboard logic
+ *  • Dashboard / components    — React web dashboard (import from dashboard.tsx directly)
+ */
 import { agentsForMarket } from "@luxury/agents";
 import type { Market, Product, ProofPack } from "@luxury/db";
 import { auditProofPack } from "@luxury/product-proof";
