@@ -9,6 +9,9 @@
  * This module adapts store.ts data into @luxury/db shapes so the dispatcher agents
  * and all downstream services can consume them without changes.
  */
+import * as fs from "fs";
+import * as path from "path";
+import { fileURLToPath } from "url";
 import type {
   Product as LuxProduct,
   ProofPack,
@@ -24,6 +27,27 @@ import {
   sampleProofPacks,
   sampleSourcingLeads,
 } from "../scripts/sample-data.js";
+
+// Resolve packages/db/data relative to this file (agent-tasks/store-data.ts)
+const SCRIPTS_DIR = path.resolve(fileURLToPath(import.meta.url), "../../scripts");
+const SCRAPED_LEADS_FILE = path.join(SCRIPTS_DIR, "../packages/db/data/sourcing-leads.json");
+
+// ─── Scraper leads loader ──────────────────────────────────────────────────────
+
+function loadScrapedLeads(): SourcingLead[] {
+  if (!fs.existsSync(SCRAPED_LEADS_FILE)) return [];
+  try {
+    const raw: SourcingLead[] = JSON.parse(fs.readFileSync(SCRAPED_LEADS_FILE, "utf-8"));
+    return raw.filter(
+      (l): l is SourcingLead =>
+        !!l.id && !!l.market && !!l.title && !!l.askingPrice && !!l.estimatedResalePrice
+    );
+  } catch {
+    return [];
+  }
+}
+
+// ─── Public API ───────────────────────────────────────────────────────────────
 
 const API_BASE = "http://localhost:3001/api";
 const FETCH_TIMEOUT_MS = 2000;
@@ -146,10 +170,16 @@ export interface StoreData {
   proofPacks: ProofPack[];
   sourcingLeads: SourcingLead[];
   orders: Array<{ orderId: string; sku: string; status: string; market: Market }>;
-  source: "api" | "sample";
+  source: "api" | "sample" | "sample+scraped";
 }
 
 export async function fetchStoreData(market?: Market): Promise<StoreData> {
+  // Load scraped leads (written by run-cycle.ts after scraping phase)
+  const scrapedLeads = loadScrapedLeads();
+  const scrapedLeadsForMarket = market
+    ? scrapedLeads.filter((l) => l.market === market)
+    : scrapedLeads;
+
   // Try fetching from the running API
   const [apiProducts, apiOrders] = await Promise.all([
     tryFetch<typeof storeProducts>("/products?limit=100", () => []),
@@ -166,22 +196,27 @@ export async function fetchStoreData(market?: Market): Promise<StoreData> {
       proofPacks: market
         ? sampleProofPacks.filter((p) => p.market === market)
         : sampleProofPacks,
-      sourcingLeads: market
-        ? sampleSourcingLeads.filter((l) => l.market === market)
-        : sampleSourcingLeads,
+      // Merge: scraped leads (from run-cycle.ts) + sample leads as seed
+      sourcingLeads: [...scrapedLeadsForMarket, ...sampleSourcingLeads.filter((l) => l.market === (market ?? l.market))],
       orders: apiOrders.map((o) => ({
         orderId: o.id,
         sku: o.productId,
         status: o.status,
-        market: "HK" as Market, // store.ts orders don't carry market; default HK
+        market: "HK" as Market,
       })),
       source: "api",
     };
   }
 
-  // API not running — use sample data filtered by market
+  // API not running — use sample + scraped leads
+  const baseLeads = market
+    ? sampleSourcingLeads.filter((l) => l.market === market)
+    : sampleSourcingLeads;
+  const allLeads = [...scrapedLeadsForMarket, ...baseLeads];
+
   console.warn(
-    "[store-data] API not reachable at http://localhost:3001 — using sample data fallback"
+    "[store-data] API not reachable at http://localhost:3001 — " +
+    `using sample data + ${scrapedLeadsForMarket.length} scraped leads`
   );
   return {
     products: market
@@ -190,11 +225,9 @@ export async function fetchStoreData(market?: Market): Promise<StoreData> {
     proofPacks: market
       ? sampleProofPacks.filter((p) => p.market === market)
       : sampleProofPacks,
-    sourcingLeads: market
-      ? sampleSourcingLeads.filter((l) => l.market === market)
-      : sampleSourcingLeads,
+    sourcingLeads: allLeads,
     orders: [],
-    source: "sample",
+    source: scrapedLeads.length > 0 ? "sample+scraped" : "sample",
   };
 }
 

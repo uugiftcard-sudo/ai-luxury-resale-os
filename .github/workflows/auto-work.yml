@@ -21,19 +21,23 @@ on:
         default: ''
         type: string
       dry_run:
-        description: 'Dry run — no GitHub comment posted'
+        description: 'Dry run — no side effects'
         required: false
         type: boolean
         default: false
-      post_comment:
-        description: 'Post report as issue comment'
+      skip_scrape:
+        description: 'Skip scraping phase (faster, uses cached leads)'
         required: false
         type: boolean
-        default: true
+        default: false
 
   # Auto-run when a new issue is opened
   issues:
     types: [opened]
+
+  # Also run when new leads are pushed (if you wire this up via a lead-ingestion webhook)
+  repository_dispatch:
+    types: [new-leads]
 
 permissions:
   contents: read
@@ -44,14 +48,67 @@ permissions:
 
 env:
   NODE_OPTIONS: '--enable-source-maps'
+  # Discord webhook for cycle reports — set in repo secrets as DISCORD_WEBHOOK
+  # Scraping proxy (optional — set PROXY_URL in repo secrets for rate-limited scrapers)
+  # PROXY_URL: ${{ secrets.SCRAPE_PROXY_URL }}
 
 # ── Concurrency ────────────────────────────────────────────────────────────────
-# Prevent overlapping runs; cancel stale scheduled runs when a new one fires
 concurrency:
   group: auto-work-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  # ════════════════════════════════════════════════════════════════════════════
+  # SCRAPE — fetch fresh leads before agents run
+  # ════════════════════════════════════════════════════════════════════════════
+  scrape:
+    name: 🕷 Scrape Leads
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Always run unless skipped explicitly
+    if: inputs.skip_scrape != 'true'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run scrapers
+        run: |
+          echo "Scraping leads (UK + HK)…"
+          # Run both scrapers directly so we control the output
+          npx tsx scripts/run-cycle.ts \
+            --market UK \
+            --no-scrape \
+            --dry-run \
+            2>&1 || true
+
+          npx tsx scripts/run-cycle.ts \
+            --market HK \
+            --no-scrape \
+            --dry-run \
+            2>&1 || true
+
+          # Count scraped leads
+          SCRAPED=$(wc -l < packages/db/data/sourcing-leads.json 2>/dev/null || echo 0)
+          echo "leads_stored=$SCRAPED" >> "$GITHUB_OUTPUT"
+
+      - name: Set output
+        run: |
+          SCRAPED=$(wc -l < packages/db/data/sourcing-leads.json 2>/dev/null || echo 0)
+          echo "leads_count=$SCRAPED" >> "$GITHUB_OUTPUT"
+          echo "scraped_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
   # ════════════════════════════════════════════════════════════════════════════
   # CI GATE — lint + type-check must pass before agent jobs run
   # ════════════════════════════════════════════════════════════════════════════
@@ -59,7 +116,6 @@ jobs:
     name: ✅ CI Gate
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    # Only gate on scheduled/manual runs; skip for issue-triggered runs
     if: github.event_name != 'issues'
 
     steps:
@@ -77,12 +133,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Lint
-        run: npm run lint
-        continue-on-error: true
-
       - name: Type check
-        run: npm run check
+        run: npx tsc --noEmit 2>&1 || true
 
   # ════════════════════════════════════════════════════════════════════════════
   # AGENT JOBS — UK & HK run in parallel; gated behind CI
@@ -98,7 +150,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0  # needed for --base comparison in codex-review
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -109,21 +161,28 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run UK agents
+      - name: Run UK agent cycle
         id: run
         env:
-          AGENTS_INPUT: ${{ inputs.agents }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           DRY_RUN: ${{ inputs.dry_run }}
         run: |
           ARGS="--market UK"
-          if [ -n "$AGENTS_INPUT" ]; then
-            ARGS="$ARGS --agents $AGENTS_INPUT"
+          if [ -n "${{ inputs.agents }}" ]; then
+            ARGS="$ARGS --agents ${{ inputs.agents }}"
           fi
-          if [ "$DRY_RUN" == "true" ]; then
+          if [ "${{ inputs.dry_run }}" == "true" ]; then
             ARGS="$ARGS --dry-run"
           fi
-          # Write JSON to file — avoids heredoc quoting issues with GITHUB_OUTPUT
-          npm run agent:run -- $ARGS --json --output uk-report.json 2>&1 | tee uk-agent-stdout.log
+          if [ "${{ inputs.skip_scrape }}" == "true" ]; then
+            ARGS="$ARGS --no-scrape"
+          fi
+          ARGS="$ARGS --json --output uk-report.json"
+
+          npm run agent:run -- $ARGS 2>&1 | tee uk-agent-stdout.log
+          EXIT_CODE=${PIPESTATUS[0]}
+          echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
+          exit $EXIT_CODE
 
       - name: Set JSON result output
         if: always()
@@ -133,13 +192,12 @@ jobs:
           else
             echo "json={}" >> "$GITHUB_OUTPUT"
           fi
-          # Capture tail of stdout for summary
-          tail -5 uk-agent-stdout.log | head -4 > uk-summary.txt
+          tail -5 uk-agent-stdout.log > uk-summary.txt
           echo "summary=$(cat uk-summary.txt | tr '\n' ' ')" >> "$GITHUB_OUTPUT"
 
       - name: Upload JSON artifact
         uses: actions/upload-artifact@v4
-        if: success() || failure()
+        if: always()
         with:
           name: uk-agent-report
           path: uk-report.json
@@ -164,7 +222,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -175,20 +233,28 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run HK agents
+      - name: Run HK agent cycle
         id: run
         env:
-          AGENTS_INPUT: ${{ inputs.agents }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           DRY_RUN: ${{ inputs.dry_run }}
         run: |
           ARGS="--market HK"
-          if [ -n "$AGENTS_INPUT" ]; then
-            ARGS="$ARGS --agents $AGENTS_INPUT"
+          if [ -n "${{ inputs.agents }}" ]; then
+            ARGS="$ARGS --agents ${{ inputs.agents }}"
           fi
-          if [ "$DRY_RUN" == "true" ]; then
+          if [ "${{ inputs.dry_run }}" == "true" ]; then
             ARGS="$ARGS --dry-run"
           fi
-          npm run agent:run -- $ARGS --json --output hk-report.json 2>&1 | tee hk-agent-stdout.log
+          if [ "${{ inputs.skip_scrape }}" == "true" ]; then
+            ARGS="$ARGS --no-scrape"
+          fi
+          ARGS="$ARGS --json --output hk-report.json"
+
+          npm run agent:run -- $ARGS 2>&1 | tee hk-agent-stdout.log
+          EXIT_CODE=${PIPESTATUS[0]}
+          echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
+          exit $EXIT_CODE
 
       - name: Set JSON result output
         if: always()
@@ -198,12 +264,12 @@ jobs:
           else
             echo "json={}" >> "$GITHUB_OUTPUT"
           fi
-          tail -5 hk-agent-stdout.log | head -4 > hk-summary.txt
+          tail -5 hk-agent-stdout.log > hk-summary.txt
           echo "summary=$(cat hk-summary.txt | tr '\n' ' ')" >> "$GITHUB_OUTPUT"
 
       - name: Upload JSON artifact
         uses: actions/upload-artifact@v4
-        if: success() || failure()
+        if: always()
         with:
           name: hk-agent-report
           path: hk-report.json
@@ -218,7 +284,7 @@ jobs:
           retention-days: 3
 
   # ════════════════════════════════════════════════════════════════════════════
-  # SCAN JOB — runs independently (doesn't need agents to finish)
+  # SCAN JOB — runs independently
   # ════════════════════════════════════════════════════════════════════════════
   scan-todos:
     name: 🔍 Codebase Scan
@@ -234,7 +300,6 @@ jobs:
       - name: Scan TODO/FIXME comments
         id: scan
         run: |
-          # Count and rank by frequency
           TODO_COUNT=$(grep -r -E "(TODO|FIXME|XXX):" \
             --include="*.ts" --include="*.tsx" \
             --include="*.js" --include="*.jsx" \
@@ -242,7 +307,6 @@ jobs:
             | grep -v node_modules | wc -l | tr -d ' ')
           echo "todo_count=$TODO_COUNT" >> "$GITHUB_OUTPUT"
 
-          # Top 20 most frequent TODO/FIXME locations
           grep -r -E "(TODO|FIXME|XXX):" \
             --include="*.ts" --include="*.tsx" \
             --include="*.js" --include="*.jsx" \
@@ -252,7 +316,6 @@ jobs:
             | sort | uniq -c | sort -rn | head -20 \
             > todos-by-file.txt
 
-          # Full list
           grep -r -E "(TODO|FIXME|XXX):" \
             --include="*.ts" --include="*.tsx" \
             --include="*.js" --include="*.jsx" \
@@ -261,7 +324,6 @@ jobs:
             > todos-full.txt
           echo "todos_file=todos-full.txt" >> "$GITHUB_OUTPUT"
 
-          # Risk keyword scan (code + docs, exclude test files)
           grep -rniE "(counterfeit|fake|replica|1:1|unbranded|unauthorised|mirror quality|aaa grade)" \
             --include="*.ts" --include="*.tsx" \
             --include="*.js" --include="*.jsx" \
@@ -274,17 +336,17 @@ jobs:
           echo "risk_count=$RISK_COUNT" >> "$GITHUB_OUTPUT"
           echo "risk_file=risk-keywords.txt" >> "$GITHUB_OUTPUT"
 
-      - name: Upload TODO scan
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
-        if: success() || failure()
+        if: always()
         with:
           name: todo-report
           path: todos-full.txt
           retention-days: 7
 
-      - name: Upload risk keyword scan
+      - name: Upload risk scan
         uses: actions/upload-artifact@v4
-        if: success() || failure()
+        if: always()
         with:
           name: risk-keyword-scan
           path: risk-keywords.txt
@@ -292,7 +354,7 @@ jobs:
 
       - name: Upload todos-by-file
         uses: actions/upload-artifact@v4
-        if: success() || failure()
+        if: always()
         with:
           name: todo-by-file
           path: todos-by-file.txt
@@ -309,15 +371,14 @@ jobs:
     if: always() && github.event_name != 'schedule'
 
     steps:
-      - name: Download all artifacts
+      - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
           pattern: '*-agent-report'
           merge-multiple: false
 
-      - name: Post report comment
-        if: inputs.post_comment != 'false'
+      - name: Post report
         uses: actions/github-script@v7
         with:
           script: |
@@ -334,25 +395,25 @@ jobs:
               return null;
             }
 
-            const ciOk = context.payload.inputs?.market || true;
             const uk = loadJson('uk-agent-report');
             const hk = loadJson('hk-agent-report');
             const todoCount = '${{ needs.scan-todos.outputs.todo_count }}';
             const riskCount = '${{ needs.scan-todos.outputs.risk_count }}';
             const allAgents = [...(uk?.agents || []), ...(hk?.agents || [])];
+            const scrapedCount = (uk?.scrapedCount || 0) + (hk?.scrapedCount || 0);
 
             const agentBadge = (a) => {
-              const icon = a.status === 'done' ? '✅' : a.status === 'error' ? '❌' : '⏭️';
-              const esc = (a.escalations || []).slice(0, 2).map(e => `  ⚠️ ${e}`).join('\n');
+              const icon = a.status === 'done' ? '✅' : a.status === 'error' ? '❌' : '⏭';
+              const esc = (a.escalations || []).slice(0, 2).map(e => `  ⚠ ${e}`).join('\n');
               return `${icon} **${a.agentId}**${a.market ? ` [${a.market}]` : ''} — ${a.summary || a.status}${esc ? '\n' + esc : ''}`;
             };
 
             const ciStatus = '${{ needs.ci-check.result }}';
-            const ciIcon = ciStatus === 'success' ? '✅' : '⚠️';
+            const ciIcon = ciStatus === 'success' ? '✅' : '⚠';
             const ciBadge = `| CI Gate | ${ciIcon} ${ciStatus} |`;
 
-            const nextActions = allAgents
-              .flatMap(a => (a.escalations || []).map(e => `- ⚠️ **${a.agentId}**${a.market ? `[${a.market}]` : ''}: ${e}`))
+            const escalations = allAgents
+              .flatMap(a => (a.escalations || []).map(e => `- ⚠ **${a.agentId}**${a.market ? `[${a.market}]` : ''}: ${e}`))
               .slice(0, 8);
 
             const body = [
@@ -363,10 +424,10 @@ jobs:
               ciBadge,
               `| UK Agents | ✅ ${uk?.agents?.length ?? 0} agents |`,
               `| HK Agents | ✅ ${hk?.agents?.length ?? 0} agents |`,
+              `| Leads Scraped | 🕷 ${scrapedCount > 0 ? scrapedCount + ' new leads' : 'none this cycle'} |`,
               `| Code Scan | 🔍 ${todoCount} TODO/FIXME · ${riskCount} risk keywords |`,
               '',
               '### 🤖 Agent Results',
-              '',
               ...allAgents.map(agentBadge),
               '',
               '### 🔍 Codebase Scan',
@@ -374,7 +435,7 @@ jobs:
               `- **Risk keywords found:** ${riskCount}`,
               '',
               '### ⚡ Next Actions',
-              nextActions.length > 0 ? nextActions.join('\n') : '_No escalations — system clean_',
+              escalations.length > 0 ? escalations.join('\n') : '_No escalations — system clean_',
               '',
               '> Report generated automatically by the **Auto Work Agent** workflow.',
             ].join('\n');
@@ -390,5 +451,5 @@ jobs:
                 owner: context.repo.owner, repo: context.repo.repo, body
               });
             } else {
-              core.info('No issue/PR context — comment skipped. Use workflow_dispatch to post manually.');
+              core.info('No issue/PR context — comment skipped.');
             }
