@@ -94,8 +94,6 @@ function formatCurrency(amount: number, currency: string): string {
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
-  const [products, setProducts] = useState<DashboardProduct[]>([]);
-  const [orders, setOrders] = useState<DashboardOrder[]>([]);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [agentRuns, setAgentRuns] = useState<AgentRun[]>([]);
   const [loading, setLoading] = useState(true);
@@ -110,8 +108,6 @@ export default function Dashboard() {
     if (showRefresh) setRefreshing(true);
     try {
       const [prods, ords] = await Promise.all([fetchProducts(), fetchOrders()]);
-      setProducts(prods);
-      setOrders(ords);
       setActivities(buildActivityFeed(prods, ords));
       setStats(computeStats(prods, ords));
       setApiOnline(true);
