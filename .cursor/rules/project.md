@@ -40,3 +40,20 @@
 ### Docker
 - All services have a `Dockerfile` at their workspace root
 - Use `docker-compose.yml` for local development; never commit local-only compose files to main
+
+---
+
+## Agent Skills
+
+All 8 domain agents have dedicated skills. Use them when working on agent tasks:
+
+| Skill | Agent | Trigger |
+|-------|-------|---------|
+| agent-sourcing | sourcing-agent.ts | Source leads, score products |
+| agent-listing | listing-agent.ts | Create listings, Shopify/eBay |
+| agent-content | content-agent.ts | Captions, hooks, social copy |
+| agent-video | video-agent.ts | Video production plans |
+| agent-fulfillment | fulfillment-agent.ts | Packing, shipping checklists |
+| agent-community | community-agent.ts | KOC briefs, VIP engagement |
+| agent-risk | risk-agent.ts | Counterfeit, compliance checks |
+| agent-report | report-agent.ts | Daily report assembly |

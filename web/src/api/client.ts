@@ -46,7 +46,7 @@ async function request<T>(
     if (err instanceof Error) {
       throw err;
     }
-    throw new Error('网络请求失败，请检查网络连接', { cause: err });
+    throw new Error('网络请求失败，请检查网络连接');
   }
 }
 

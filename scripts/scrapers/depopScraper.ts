@@ -212,3 +212,23 @@ async function main() {
 }
 
 main().catch(console.error);
+
+/**
+ * Named export for CLI / run-cycle.ts
+ */
+export async function scrapeDepop(): Promise<number> {
+  const queries = ['gucci bag sold', 'chanel bag sold', 'prada bag sold', 'louis vuitton bag sold'];
+  let total = 0;
+  for (const query of queries) {
+    const urls = await searchDepop(query);
+    for (const url of urls.slice(0, 5)) {
+      try {
+        const p = await scrapeProductDetail(url);
+        if (p && p.price > 0) total++;
+      } catch { /* skip failed individual products */ }
+    }
+  }
+  return total;
+}
+
+export { searchDepop, scrapeProductDetail };

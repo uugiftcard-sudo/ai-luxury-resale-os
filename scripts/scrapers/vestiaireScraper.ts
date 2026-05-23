@@ -192,3 +192,23 @@ async function main() {
 }
 
 main().catch(console.error);
+
+/**
+ * Named export for CLI / run-cycle.ts
+ */
+export async function scrapeVestiaire(): Promise<number> {
+  const queries = ['gucci', 'chanel', 'prada', 'louis vuitton'];
+  let total = 0;
+  for (const query of queries) {
+    const urls = await searchVestiaire(query);
+    for (const url of urls.slice(0, 5)) {
+      try {
+        const p = await scrapeProductDetail(url);
+        if (p && p.price > 0) total++;
+      } catch { /* skip */ }
+    }
+  }
+  return total;
+}
+
+export { searchVestiaire, scrapeProductDetail };

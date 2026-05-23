@@ -73,10 +73,20 @@ export default function ActivityFeed({ items, loading = false }: ActivityFeedPro
       <div className={styles.activityFeed}>
         <div className={styles.feedHeader}>
           <h3 className={styles.sectionTitle}>Recent Activity</h3>
+          <span className={styles.feedCount}>0 events</span>
         </div>
         <div className={styles.feedEmpty}>
           <span className={styles.feedEmptyIcon}>📭</span>
-          <p>No recent activity</p>
+          <p>No recent activity yet</p>
+          <p className={styles.feedEmptyHint}>
+            Activity will appear here once products are listed, orders are placed, or agents are run.
+          </p>
+          <button
+            className={styles.feedEmptyAction}
+            onClick={() => window.location.href = "/admin?tab=add-product"}
+          >
+            + Add your first product
+          </button>
         </div>
       </div>
     );
@@ -86,7 +96,7 @@ export default function ActivityFeed({ items, loading = false }: ActivityFeedPro
     <div className={styles.activityFeed}>
       <div className={styles.feedHeader}>
         <h3 className={styles.sectionTitle}>Recent Activity</h3>
-        <span className={styles.feedCount}>{items.length} events</span>
+        <span className={styles.feedCount}>{items.length} event{items.length !== 1 ? "s" : ""}</span>
       </div>
       <div className={styles.feedList}>
         {items.map((item) => {

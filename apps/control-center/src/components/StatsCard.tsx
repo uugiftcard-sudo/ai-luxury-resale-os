@@ -34,32 +34,39 @@ export default function StatsCard({
         </div>
       ) : (
         <>
-          <div className={styles.statsCardTop}>
-            <div
-              className={styles.statsIcon}
-              style={accentColor ? { color: accentColor } : undefined}
-            >
-              {icon}
-            </div>
-            {trend && trendValue && (
-              <span
-                className={`${styles.trend} ${
-                  trend === "up"
-                    ? styles.trendUp
-                    : trend === "down"
-                    ? styles.trendDown
-                    : styles.trendNeutral
-                }`}
+          {/* Accent color strip at top */}
+          <div
+            className={styles.statsAccentStrip}
+            style={accentColor ? { background: accentColor } : undefined}
+          />
+          <div className={styles.statsCardBody}>
+            <div className={styles.statsCardTop}>
+              <div
+                className={styles.statsIcon}
+                style={accentColor ? { color: accentColor } : undefined}
               >
-                {trend === "up" ? "↑" : trend === "down" ? "↓" : "—"} {trendValue}
-              </span>
-            )}
+                {icon}
+              </div>
+              {trend && trendValue && (
+                <span
+                  className={`${styles.trend} ${
+                    trend === "up"
+                      ? styles.trendUp
+                      : trend === "down"
+                      ? styles.trendDown
+                      : styles.trendNeutral
+                  }`}
+                >
+                  {trend === "up" ? "↑" : trend === "down" ? "↓" : "—"} {trendValue}
+                </span>
+              )}
+            </div>
+            <div className={styles.statsValue}>
+              {typeof value === "number" ? value.toLocaleString() : value}
+            </div>
+            <div className={styles.statsLabel}>{label}</div>
+            {subValue && <div className={styles.statsSub}>{subValue}</div>}
           </div>
-          <div className={styles.statsValue}>
-            {typeof value === "number" ? value.toLocaleString() : value}
-          </div>
-          <div className={styles.statsLabel}>{label}</div>
-          {subValue && <div className={styles.statsSub}>{subValue}</div>}
         </>
       )}
     </div>

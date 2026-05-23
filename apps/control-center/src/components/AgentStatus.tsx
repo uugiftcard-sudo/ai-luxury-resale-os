@@ -5,6 +5,8 @@ import styles from "../../Dashboard.module.css";
 interface AgentStatusProps {
   runs: AgentRun[];
   loading?: boolean;
+  onRunAgents?: () => void;
+  dispatchRunning?: boolean;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -30,7 +32,7 @@ function formatDuration(ms?: number): string {
   return `${(ms / 60000).toFixed(1)}m`;
 }
 
-export default function AgentStatus({ runs, loading = false }: AgentStatusProps) {
+export default function AgentStatus({ runs, loading = false, onRunAgents, dispatchRunning = false }: AgentStatusProps) {
   if (loading) {
     return (
       <div className={styles.agentStatus}>
@@ -58,7 +60,18 @@ export default function AgentStatus({ runs, loading = false }: AgentStatusProps)
         <div className={styles.agentEmpty}>
           <span className={styles.agentEmptyIcon}>🤖</span>
           <p>No agent runs yet</p>
-          <p className={styles.agentEmptyHint}>Run the dispatcher to see agent activity</p>
+          <p className={styles.agentEmptyHint}>
+            Run the dispatcher to score leads, generate listings, and sync content across markets.
+          </p>
+          {onRunAgents && (
+            <button
+              className={styles.agentEmptyAction}
+              onClick={onRunAgents}
+              disabled={dispatchRunning}
+            >
+              {dispatchRunning ? "Running agents…" : "Run Sourcing Agent →"}
+            </button>
+          )}
         </div>
       </div>
     );
@@ -68,7 +81,7 @@ export default function AgentStatus({ runs, loading = false }: AgentStatusProps)
     <div className={styles.agentStatus}>
       <div className={styles.agentHeader}>
         <h3 className={styles.sectionTitle}>Agent Runs</h3>
-        <span className={styles.agentCount}>{runs.length} runs</span>
+        <span className={styles.agentCount}>{runs.length} run{runs.length !== 1 ? "s" : ""}</span>
       </div>
       <div className={styles.agentList}>
         {runs.map((run) => {
@@ -106,12 +119,12 @@ export default function AgentStatus({ runs, loading = false }: AgentStatusProps)
                 )}
                 {run.itemsProcessed != null && run.itemsProcessed > 0 && (
                   <span className={styles.agentMetric}>
-                    {run.itemsProcessed} items
+                    {run.itemsProcessed.toLocaleString()} items
                   </span>
                 )}
                 {run.tasksGenerated != null && run.tasksGenerated > 0 && (
                   <span className={styles.agentMetric}>
-                    {run.tasksGenerated} tasks
+                    {run.tasksGenerated.toLocaleString()} tasks
                   </span>
                 )}
               </div>
