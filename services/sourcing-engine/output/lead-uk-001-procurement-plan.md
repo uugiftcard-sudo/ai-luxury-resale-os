@@ -1,21 +1,21 @@
 # Procurement Plan — lead-uk-001
 
-**Status:** BUY — Ready for Acquisition  
-**Date:** 2026-05-23  
-**Market:** UK  
-**Channel:** Vinted UK  
+**Status:** BUY — Ready for Acquisition
+**Date:** 2026-05-23
+**Market:** UK
+**Channel:** Vinted UK
 
 ---
 
 ## Executive Summary
 
-A vintage designer shoulder bag listed on Vinted UK at **£180** with a receipt, serial photo, and positive seller history (3/3) — estimated to generate **£126.20 profit (70.11% ROI)** if resold at £360 on eBay or Shopify UK.
+A vintage designer shoulder bag listed on Vinted UK at **£180** with a receipt, serial photo, and positive seller history (3/3) — estimated to generate **£125.20 profit (69.56% ROI)** if resold at £360 on eBay or Shopify UK.
 
 ---
 
 ## Item Details
 
-| Field | Value |
+|| Field | Value |
 |-------|-------|
 | Lead ID | lead-uk-001 |
 | Channel | Vinted UK |
@@ -26,19 +26,19 @@ A vintage designer shoulder bag listed on Vinted UK at **£180** with a receipt,
 | Estimated resale price | £360 (GBP) |
 | Estimated shipping | £8.00 |
 | Platform fee | 13% of £360 = £46.80 |
-| Estimated profit | £360 − £180 − £8 − £46.80 = **£125.20** |
+| Estimated profit | £125.20 |
 | Estimated ROI | 69.56% |
 | Brand stream | luxury_resale |
-| Risk flags | None |
+| Risk flags | ⚠️ None confirmed — brand unidentified (see Risk Register) |
 | Evidence available | Receipt, serial photo, seller history (3/3) |
 
-> **Note on profit discrepancy:** The lead data records £126.20 as estimated profit, but the calculation yields £125.20. This minor variance (likely rounding) is not material to the BUY decision. Both figures represent strong margin.
+> **Data flag:** The sourcing lead data recorded £126.20 as estimated profit and 70.11% ROI. The verified calculation is £360 − £180 − £8 − £46.80 = **£125.20 / 69.56%**. The £126.20 figure likely stems from a different fee assumption (e.g., 12.5% instead of 13%). **Flag to sourcing agent to correct source data entry.**
 
 ---
 
 ## Evidence Audit
 
-| Evidence | Status | Notes |
+|| Evidence | Status | Notes |
 |----------|--------|-------|
 | Receipt | ✅ PASS | Original proof of purchase — validates authenticity and purchase price. Confirm brand, date, and amount are legible and consistent with listing. |
 | Serial photo | ✅ PASS | Physical serial/code visible — cross-reference against brand registry or database. Confirm serial is not tampered with or mismatched. |
@@ -52,7 +52,7 @@ A vintage designer shoulder bag listed on Vinted UK at **£180** with a receipt,
 
 ## Comparable Prices
 
-| # | Source | Item | Condition | Sold / Listed | Price | Date |
+|| # | Source | Item | Condition | Sold / Listed | Price | Date |
 |---|--------|------|-----------|---------------|-------|------|
 | 1 | Vinted UK | Versace shoulder bag (new with tags) | NWT | Listed | £350–£368 | May 2026 |
 | 2 | Vinted UK | Burberry Plaid Boston shoulder bag | Pre-owned Good | Sold | £273.45 | Feb 2026 |
@@ -70,8 +70,8 @@ A vintage designer shoulder bag listed on Vinted UK at **£180** with a receipt,
 
 ## Seller Signals
 
-| Signal | Detail | Assessment |
-|--------|--------|------------|
+|| Signal | Detail | Assessment |
+|--------|--------|-------|
 | Platform | Vinted UK | ✅ Trusted UK resale platform with buyer protection |
 | Transaction history | 3/3 positive | ✅ Good signal — 3 completed luxury bag sales (to be verified) |
 | Account age | Not yet verified | ⚠️ Confirm account age — older accounts with history are lower risk |
@@ -85,7 +85,7 @@ A vintage designer shoulder bag listed on Vinted UK at **£180** with a receipt,
 
 From lead data: "Vintage designer shoulder bag" — condition details are **not fully specified** in the listing record.
 
-**Known:** Vintage item, has receipt, has serial photo.  
+**Known:** Vintage item, has receipt, has serial photo.
 **Unknown:** Specific brand/model, size, material, visible wear, interior condition, hardware, strap, any defects.
 
 **Discrepancy flags:**
@@ -124,8 +124,8 @@ Happy to purchase immediately once I've had a look. Thanks!
 
 **Recommendation: Offer full asking price of £180 — with conditions.**
 
-| Approach | Price | Reasoning |
-|----------|-------|-----------|
+|| Approach | Price | Reasoning |
+|----------|-------|-------|
 | **Accept full ask** | £180 | ✅ Optimal — 70% ROI is strong; low risk of losing the item to another buyer at this margin. Vintage designer bags at £180 are uncommon. Moving fast signals seriousness. |
 | Counter-offer | £165–£170 | ⚠️ Marginal gain (£10–£15) vs. risk of losing the item. Not recommended for a vintage piece with 3 evidence items. |
 | Lowball | < £160 | ❌ High risk of losing the item. Vintage designer bags attract multiple buyers quickly. |
@@ -140,8 +140,8 @@ Additional cost to factor: **£10 Vinted Item Verification** (optional but recom
 
 ### Risk 1 — Brand not specified in listing data
 
-**Severity:** HIGH  
-**Likelihood:** HIGH  
+**Severity:** HIGH
+**Likelihood:** HIGH
 
 A vague "vintage designer" label could mean anything from Coach to Chanel. The ROI and authenticity risk are entirely brand-dependent. A mid-tier brand at £180 asking with £360 resale is credible; a Chanel bag at £180 should raise counterfeit flags.
 
@@ -154,8 +154,8 @@ A vague "vintage designer" label could mean anything from Coach to Chanel. The R
 
 ### Risk 2 — Condition not fully disclosed
 
-**Severity:** MEDIUM  
-**Likelihood:** MEDIUM  
+**Severity:** MEDIUM
+**Likelihood:** MEDIUM
 
 Vintage items commonly have undisclosed wear: corner scuffing, leather drying, hardware pitting, interior staining. £360 resale depends on accurate condition representation.
 
@@ -169,8 +169,8 @@ Vintage items commonly have undisclosed wear: corner scuffing, leather drying, h
 
 ### Risk 3 — Seller history not specific to luxury bags
 
-**Severity:** MEDIUM  
-**Likelihood:** LOW–MEDIUM  
+**Severity:** MEDIUM
+**Likelihood:** LOW–MEDIUM
 
 The "3/3" seller history is positive but not confirmed as luxury bag sales specifically. A seller with 3/3 on low-value fashion items carries different risk than one with 3/3 on luxury bags.
 
@@ -200,17 +200,16 @@ The "3/3" seller history is positive but not confirmed as luxury bag sales speci
 
 ## Finance Summary
 
-| Line | Amount (GBP) |
+|| Line | Amount (GBP) |
 |------|-------------|
 | Asking price | £180.00 |
 | Shipping | £8.00 |
-| Vinted Item Verification (optional) | £10.00 |
 | Platform fee (13% of £360) | £46.80 |
-| **Total cost basis** | **£244.80** |
+| Vinted Item Verification (optional) | £10.00 |
+| **Total cost basis** | **£234.80** (or £244.80 with verification) |
 | Target resale price | £360.00 |
-| **Estimated gross profit** | **£115.20** |
-| Estimated ROI | 47.06% |
-| *Note: Without £10 verification* | *£125.20 / 69.56%* |
+| **Estimated gross profit** | **£125.20** (or £115.20 with verification) |
+| **Estimated ROI** | **69.56%** (or 49.04% with verification) |
 
 ---
 
