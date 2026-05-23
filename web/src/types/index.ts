@@ -107,3 +107,113 @@ export interface OrderFormData {
   productId: string;
   buyerInfo: BuyerInfo;
 }
+
+// ==================== 客服系统 ====================
+export type SupportTicketType = 'inquiry' | 'return' | 'exchange' | 'repair';
+export type SupportTicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
+export type SupportTicketPriority = 'low' | 'normal' | 'high' | 'urgent';
+
+export interface SupportTicket {
+  id: string;
+  ticketNo: string;
+  type: SupportTicketType;
+  status: SupportTicketStatus;
+  subject: string;
+  description: string;
+  orderId?: string;
+  priority: SupportTicketPriority;
+  customerName: string;
+  customerEmail: string;
+  customerPhone?: string;
+  adminReply?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface SupportMessage {
+  id: string;
+  ticketId: string;
+  sender: 'customer' | 'admin';
+  message: string;
+  createdAt: string;
+}
+
+export interface SupportTicketFormData {
+  type: SupportTicketType;
+  subject: string;
+  description: string;
+  orderId?: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone?: string;
+}
+
+export interface SupportFAQ {
+  id: string;
+  question: string;
+  answer: string;
+  category: string;
+}
+
+// ==================== 仓储系统 ====================
+export type InventoryTransactionType = 'inbound' | 'outbound' | 'adjustment' | 'return';
+
+export interface InventoryItem {
+  id: string;
+  sku: string;
+  productId?: string;
+  productName: string;
+  brand?: string;
+  category?: string;
+  size?: string;
+  color?: string;
+  condition?: string;
+  currentStock: number;
+  minStockThreshold: number;
+  unitCost?: number;
+  unitPrice?: number;
+  location?: string;
+  supplier?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface InventoryTransaction {
+  id: string;
+  inventoryId: string;
+  sku: string;
+  productName: string;
+  type: InventoryTransactionType;
+  quantity: number;
+  referenceNo?: string;
+  notes?: string;
+  operator?: string;
+  createdAt: string;
+}
+
+export interface InventoryFormData {
+  sku: string;
+  productId?: string;
+  productName: string;
+  brand?: string;
+  category?: string;
+  size?: string;
+  color?: string;
+  condition?: string;
+  currentStock: number;
+  minStockThreshold?: number;
+  unitCost?: number;
+  unitPrice?: number;
+  location?: string;
+  supplier?: string;
+  notes?: string;
+}
+
+export interface InventoryStats {
+  totalSKUs: number;
+  totalStock: number;
+  lowStockCount: number;
+  outOfStockCount: number;
+  totalValue: number;
+}
