@@ -9,9 +9,14 @@ import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
 import Orders from './pages/Orders';
 import Admin from './pages/Admin';
+import Support from './pages/Support';
+import Inventory from './pages/Inventory';
+import AdminWarehouse from './pages/AdminWarehouse';
 import { CartProvider } from './hooks/useCart';
 import { ToastProvider } from './hooks/useToast';
 import { MarketProvider } from './hooks/useMarket';
+import { SupportProvider } from './contexts/SupportContext';
+import { InventoryProvider } from './contexts/InventoryContext';
 
 export default function App() {
   return (
@@ -19,35 +24,48 @@ export default function App() {
       <ToastProvider>
         <CartProvider>
           <MarketProvider>
-            <Header />
-            <main>
-              <Routes>
-                {/* ── UK market (default /) ─────────────────────────── */}
-                <Route path="/" element={<UKHome />} />
-                <Route path="/products" element={<ProductList />} />
-                <Route path="/products/:id" element={<ProductDetail />} />
-                <Route path="/cart" element={<Cart />} />
-                <Route path="/orders" element={<Orders />} />
-                <Route path="/admin" element={<Admin />} />
+            <SupportProvider>
+              <InventoryProvider>
+                <Header />
+                <main>
+                  <Routes>
+                    {/* ── UK market (default /) ─────────────────────────── */}
+                    <Route path="/" element={<UKHome />} />
+                    <Route path="/products" element={<ProductList />} />
+                    <Route path="/products/:id" element={<ProductDetail />} />
+                    <Route path="/cart" element={<Cart />} />
+                    <Route path="/orders" element={<Orders />} />
+                    <Route path="/admin" element={<Admin />} />
+                    <Route path="/support" element={<Support />} />
+                    <Route path="/inventory" element={<Inventory />} />
+                    <Route path="/admin/warehouse" element={<AdminWarehouse />} />
 
-                {/* ── HK market (/hk) ───────────────────────────────── */}
-                <Route path="/hk" element={<HKHome />} />
-                <Route path="/hk/products" element={<ProductList />} />
-                <Route path="/hk/products/:id" element={<ProductDetail />} />
-                <Route path="/hk/cart" element={<Cart />} />
-                <Route path="/hk/orders" element={<Orders />} />
-                <Route path="/hk/admin" element={<Admin />} />
+                    {/* ── HK market (/hk) ───────────────────────────────── */}
+                    <Route path="/hk" element={<HKHome />} />
+                    <Route path="/hk/products" element={<ProductList />} />
+                    <Route path="/hk/products/:id" element={<ProductDetail />} />
+                    <Route path="/hk/cart" element={<Cart />} />
+                    <Route path="/hk/orders" element={<Orders />} />
+                    <Route path="/hk/admin" element={<Admin />} />
+                    <Route path="/hk/support" element={<Support />} />
+                    <Route path="/hk/inventory" element={<Inventory />} />
+                    <Route path="/hk/admin/warehouse" element={<AdminWarehouse />} />
 
-                {/* ── CN market (/cn) ────────────────────────────────── */}
-                <Route path="/cn" element={<Home />} />
-                <Route path="/cn/products" element={<ProductList />} />
-                <Route path="/cn/products/:id" element={<ProductDetail />} />
-                <Route path="/cn/cart" element={<Cart />} />
-                <Route path="/cn/orders" element={<Orders />} />
-                <Route path="/cn/admin" element={<Admin />} />
-              </Routes>
-            </main>
-            <Footer />
+                    {/* ── CN market (/cn) ────────────────────────────────── */}
+                    <Route path="/cn" element={<Home />} />
+                    <Route path="/cn/products" element={<ProductList />} />
+                    <Route path="/cn/products/:id" element={<ProductDetail />} />
+                    <Route path="/cn/cart" element={<Cart />} />
+                    <Route path="/cn/orders" element={<Orders />} />
+                    <Route path="/cn/admin" element={<Admin />} />
+                    <Route path="/cn/support" element={<Support />} />
+                    <Route path="/cn/inventory" element={<Inventory />} />
+                    <Route path="/cn/admin/warehouse" element={<AdminWarehouse />} />
+                  </Routes>
+                </main>
+                <Footer />
+              </InventoryProvider>
+            </SupportProvider>
           </MarketProvider>
         </CartProvider>
       </ToastProvider>
