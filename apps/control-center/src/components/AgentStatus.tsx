@@ -1,6 +1,6 @@
 import React from "react";
 import type { AgentRun } from "../types/dashboard.js";
-import styles from "../Dashboard.module.css";
+import styles from "../../Dashboard.module.css";
 
 interface AgentStatusProps {
   runs: AgentRun[];

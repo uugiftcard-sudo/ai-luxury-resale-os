@@ -40,8 +40,8 @@ const VESTIAIRE_BASE_URL = 'https://www.vestiairecollective.com';
 // 搜索关键词
 const SEARCH_QUERIES = ['gucci', 'chanel', 'prada', 'louis vuitton', 'hermes'];
 
-// Vestiaire 成色映射
-const CONDITION_MAP: Record<string, string> = {
+// Vestiaire 成色映射 (保留用于未来实现)
+const _CONDITION_MAP: Record<string, string> = {
   'never_used': '全新',
   'very_good': '几乎全新',
   'good': '轻微使用痕迹',

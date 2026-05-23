@@ -1,6 +1,6 @@
 import React from "react";
 import type { ActivityItem, ActivityType } from "../types/dashboard.js";
-import styles from "../Dashboard.module.css";
+import styles from "../../Dashboard.module.css";
 
 interface ActivityFeedProps {
   items: ActivityItem[];

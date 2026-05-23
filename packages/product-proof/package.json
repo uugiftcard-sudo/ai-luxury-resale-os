@@ -1,0 +1,9 @@
+{
+  "name": "@luxury/product-proof",
+  "version": "0.1.0",
+  "description": "Authentication proof pack builder and auditor for CLOTH luxury goods",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

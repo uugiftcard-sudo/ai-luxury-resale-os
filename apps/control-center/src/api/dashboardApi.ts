@@ -49,7 +49,7 @@ export async function fetchOrders(): Promise<DashboardOrder[]> {
 }
 
 function adaptOrder(o: DashboardOrder): DashboardOrder {
-  const raw = o as Record<string, unknown>;
+  const raw = o as unknown as Record<string, unknown>;
   return {
     ...o,
     orderId: (raw["orderId"] as string) || (o as any).orderId || o.id,

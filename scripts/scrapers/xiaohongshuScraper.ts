@@ -223,7 +223,7 @@ async function searchXHSNotes(query: string): Promise<XHSNote[]> {
       }));
     }
     return [];
-  } catch (err) {
+  } catch (_err) {
     // 小红书反爬，预期失败
     console.warn(`  ⚠️  小红书 API 访问受限 (需使用 Playwright 或 MCP 工具)`);
     return [];
