@@ -7,7 +7,7 @@
  *
  * Status: STUB — implement video asset generation pipeline.
  */
-import type { Product, VideoAsset, VideoFormat, ProofPack, BrandStream, Market, Language } from "@luxury/db";
+import type { Product, VideoAsset, ProofPack } from "@luxury/db";
 
 export interface VideoPack {
   sku: string;
