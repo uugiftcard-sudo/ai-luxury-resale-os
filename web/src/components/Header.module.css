@@ -233,6 +233,141 @@
   transform: rotate(-45deg) translate(3px, -3px);
 }
 
+/* ── Market Selector ────────────────────────────────────────────────────────── */
+.marketSelector {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.marketBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.marketBtn:hover {
+  border-color: var(--color-primary);
+  background: var(--color-bg);
+}
+
+.marketFlag {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.marketLabel {
+  letter-spacing: 0.5px;
+}
+
+.marketBtn svg {
+  transition: transform var(--transition-fast);
+  color: var(--color-text-muted);
+}
+
+.chevronUp {
+  transform: rotate(180deg);
+}
+
+.marketDropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  border-radius: 10px;
+  box-shadow: var(--shadow-md);
+  min-width: 160px;
+  overflow: hidden;
+  z-index: 200;
+  animation: dropIn 0.15s ease-out;
+}
+
+@keyframes dropIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.marketOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  transition: background var(--transition-fast);
+  text-align: left;
+}
+
+.marketOption:hover {
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+}
+
+.marketOptionActive {
+  color: var(--color-primary);
+  font-weight: 600;
+  background: var(--color-bg);
+}
+
+/* ── Menu Button ──────────────────────────────────────────────────────────── */
+.menuBtn {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.menuLine {
+  display: block;
+  width: 22px;
+  height: 1.5px;
+  background: var(--color-text-primary);
+  transition: all var(--transition-base);
+  transform-origin: center;
+}
+
+.menuLine::before,
+.menuLine::after {
+  content: '';
+  display: block;
+  width: 22px;
+  height: 1.5px;
+  background: var(--color-text-primary);
+  transition: all var(--transition-base);
+}
+
+.menuOpen {
+  background: transparent;
+}
+
+.menuOpen::before {
+  transform: rotate(45deg) translate(5px, 5px);
+}
+
+.menuOpen::after {
+  transform: rotate(-45deg) translate(3px, -3px);
+}
+
 /* 响应式 */
 @media (max-width: 900px) {
   .nav {
@@ -259,6 +394,10 @@
 
   .menuBtn {
     display: flex;
+  }
+
+  .marketSelector {
+    order: -1;
   }
 }
 
