@@ -4,9 +4,10 @@
  */
 import { Router, Request, Response } from 'express';
 import {
-  products,
+  products as allProducts, // aliased intentionally for readability in this file
   findProductById,
   generateId,
+  filterProductsByMarket,
 } from '../models/store';
 import { Product, ProductFilter, ProductStatus } from '../models/types';
 import { ok, notFound, serverError, validateRequired } from '../middleware/response';
@@ -15,11 +16,12 @@ const router = Router();
 
 /**
  * GET /api/products
- * 商品列表（支持分页、筛选）
+ * 商品列表（支持分页、筛选、market 过滤）
  */
 router.get('/', (req: Request, res: Response) => {
   try {
     const {
+      market = 'ALL',
       brand,
       category,
       condition,
@@ -43,7 +45,10 @@ router.get('/', (req: Request, res: Response) => {
       limit: Number(limit),
     };
 
-    const filtered = products.filter(p => {
+    // Filter by market scope
+    const visible = filterProductsByMarket(market as string);
+
+    const filtered = visible.filter(p => {
       if (filter.status && p.status !== filter.status) return false;
       if (filter.brand && p.brand !== filter.brand) return false;
       if (filter.category && p.category !== filter.category) return false;
@@ -122,7 +127,7 @@ router.post('/', (req: Request, res: Response) => {
       createdAt: new Date().toISOString(),
     };
 
-    products.unshift(newProduct);
+    allProducts.unshift(newProduct);
     ok(res, newProduct, '商品上架成功');
   } catch (err) {
     serverError(res, err);
@@ -135,21 +140,21 @@ router.post('/', (req: Request, res: Response) => {
  */
 router.put('/:id', (req: Request, res: Response) => {
   try {
-    const idx = products.findIndex(p => p.id === req.params.id);
+    const idx = allProducts.findIndex(p => p.id === req.params.id);
     if (idx === -1) {
       notFound(res, '商品');
       return;
     }
 
     const updated: Product = {
-      ...products[idx],
+      ...allProducts[idx],
       ...req.body,
-      id: products[idx].id, // 防止ID被修改
-      createdAt: products[idx].createdAt, // 防止创建时间被修改
+      id: allProducts[idx].id,
+      createdAt: allProducts[idx].createdAt,
       updatedAt: new Date().toISOString(),
     };
 
-    products[idx] = updated;
+    allProducts[idx] = updated;
     ok(res, updated, '商品更新成功');
   } catch (err) {
     serverError(res, err);
@@ -162,19 +167,19 @@ router.put('/:id', (req: Request, res: Response) => {
  */
 router.delete('/:id', (req: Request, res: Response) => {
   try {
-    const idx = products.findIndex(p => p.id === req.params.id);
+    const idx = allProducts.findIndex(p => p.id === req.params.id);
     if (idx === -1) {
       notFound(res, '商品');
       return;
     }
 
-    products[idx] = {
-      ...products[idx],
+    allProducts[idx] = {
+      ...allProducts[idx],
       status: '已下架',
       updatedAt: new Date().toISOString(),
     };
 
-    ok(res, products[idx], '商品已下架');
+    ok(res, allProducts[idx], '商品已下架');
   } catch (err) {
     serverError(res, err);
   }
