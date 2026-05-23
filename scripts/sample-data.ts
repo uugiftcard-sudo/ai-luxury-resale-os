@@ -1,6 +1,9 @@
 import type { CustomerProfile, LiveSession, OrderRecord, Product, ProofPack, SourcingLead } from "@luxury/db";
+import { seedAll } from "@luxury/db";
 
-export const sampleProducts: Product[] = [
+export { sampleProducts, sampleProofPacks, sampleSourcingLeads, sampleOrders, sampleLiveSessions, sampleCustomers };
+
+const sampleProducts: Product[] = [
   {
     sku: "UK-LUX-001",
     market: "UK",
@@ -56,7 +59,7 @@ export const sampleProducts: Product[] = [
   }
 ];
 
-export const sampleProofPacks: ProofPack[] = [
+const sampleProofPacks: ProofPack[] = [
   {
     id: "proof-UK-LUX-001",
     sku: "UK-LUX-001",
@@ -86,7 +89,7 @@ export const sampleProofPacks: ProofPack[] = [
   }
 ];
 
-export const sampleSourcingLeads: SourcingLead[] = [
+const sampleSourcingLeads: SourcingLead[] = [
   {
     id: "lead-uk-001",
     market: "UK",
@@ -115,7 +118,7 @@ export const sampleSourcingLeads: SourcingLead[] = [
   }
 ];
 
-export const sampleOrders: OrderRecord[] = [
+const sampleOrders: OrderRecord[] = [
   {
     orderId: "order-uk-001",
     sku: "UK-LUX-001",
@@ -142,7 +145,7 @@ export const sampleOrders: OrderRecord[] = [
   }
 ];
 
-export const sampleLiveSessions: LiveSession[] = [
+const sampleLiveSessions: LiveSession[] = [
   {
     sessionId: "live-uk-001",
     market: "UK",
@@ -163,7 +166,7 @@ export const sampleLiveSessions: LiveSession[] = [
   }
 ];
 
-export const sampleCustomers: CustomerProfile[] = [
+const sampleCustomers: CustomerProfile[] = [
   {
     customerId: "uk-old-1",
     market: "UK",
@@ -212,3 +215,12 @@ export const sampleCustomers: CustomerProfile[] = [
     riskFlags: ["chargeback_history"]
   }
 ];
+
+export function seedToDb(): void {
+  seedAll(sampleProducts, sampleProofPacks, sampleSourcingLeads, sampleOrders);
+  console.log(
+    "Seeded: products=%d, proofPacks=%d, leads=%d, orders=%d",
+    sampleProducts.length, sampleProofPacks.length,
+    sampleSourcingLeads.length, sampleOrders.length
+  );
+}

@@ -1,0 +1,92 @@
+[
+  {
+    "sku": "UK-LUX-001",
+    "market": "UK",
+    "brandStream": "luxury_resale",
+    "currency": "GBP",
+    "language": "en-GB",
+    "title": "Gucci GG Canvas Crossbody Bag",
+    "brand": "Gucci",
+    "category": "bag",
+    "conditionGrade": "B",
+    "conditionNotes": "Visible corner wear, clean interior, hardware has light scratches.",
+    "cost": {
+      "amount": 220,
+      "currency": "GBP"
+    },
+    "targetPrice": {
+      "amount": 395,
+      "currency": "GBP"
+    },
+    "status": "proof_ready",
+    "platforms": [
+      "ebay_uk",
+      "shopify_uk",
+      "tiktok_shop_uk",
+      "instagram"
+    ],
+    "proofPackId": "proof-UK-LUX-001",
+    "riskFlags": [
+      "designer_brand"
+    ]
+  },
+  {
+    "sku": "HK-LUX-001",
+    "market": "HK",
+    "brandStream": "luxury_resale",
+    "currency": "HKD",
+    "language": "zh-Hant-HK",
+    "title": "Prada Nylon Shoulder Bag",
+    "brand": "Prada",
+    "category": "手袋",
+    "conditionGrade": "B",
+    "conditionNotes": "袋身有輕微使用痕跡，金屬扣有正常花痕，內籠乾淨。",
+    "cost": {
+      "amount": 2600,
+      "currency": "HKD"
+    },
+    "targetPrice": {
+      "amount": 4800,
+      "currency": "HKD"
+    },
+    "status": "proof_ready",
+    "platforms": [
+      "carousell_hk",
+      "shopify_hk",
+      "instagram",
+      "whatsapp_catalogue"
+    ],
+    "proofPackId": "proof-HK-LUX-001",
+    "riskFlags": [
+      "designer_brand",
+      "carousell_counterfeit_sensitivity"
+    ]
+  },
+  {
+    "sku": "HK-BUD-001",
+    "market": "HK",
+    "brandStream": "budget_fashion",
+    "currency": "HKD",
+    "language": "zh-Hant-HK",
+    "title": "Korean Style Cropped Blazer",
+    "category": "平價時裝",
+    "size": "M",
+    "conditionGrade": "A",
+    "conditionNotes": "近新，無明顯瑕疵。",
+    "cost": {
+      "amount": 120,
+      "currency": "HKD"
+    },
+    "targetPrice": {
+      "amount": 260,
+      "currency": "HKD"
+    },
+    "status": "listed",
+    "platforms": [
+      "instagram",
+      "whatsapp_catalogue",
+      "facebook_marketplace_hk"
+    ],
+    "riskFlags": []
+  }
+]
