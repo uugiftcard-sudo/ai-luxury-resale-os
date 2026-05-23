@@ -4,6 +4,7 @@
  */
 import { useState, useEffect } from 'react';
 import { productApi, orderApi } from '../api/client';
+import { useMarket } from '../hooks/useMarket';
 import type { Product, Order } from '../types';
 import { useToast } from '../hooks/useToast';
 import styles from './Admin.module.css';
@@ -79,6 +80,7 @@ function productToForm(p: Product): ProductFormData {
 // ==================== Admin Component ====================
 export default function Admin() {
   const { showToast } = useToast();
+  const { market } = useMarket();
 
   // Tab 状态
   const [activeTab, setActiveTab] = useState<'products' | 'orders'>('products');
@@ -100,18 +102,15 @@ export default function Admin() {
   // 加载全部商品（包括非待售）
   function loadAllProducts() {
     setProductsLoading(true);
-    fetch('/api/products?limit=100')
-      .then(r => r.json())
-      .then(data => {
-        if (data.success) setProducts(data.data.data);
-      })
+    productApi.list(market, { limit: 100 })
+      .then(res => setProducts(res.data))
       .catch(console.error)
       .finally(() => setProductsLoading(false));
   }
 
   function loadOrders() {
     setOrdersLoading(true);
-    orderApi.list()
+    orderApi.list(market)
       .then(r => setOrders(r.data))
       .catch(console.error)
       .finally(() => setOrdersLoading(false));
@@ -147,11 +146,11 @@ export default function Admin() {
     try {
       const data = formToProduct(form);
       if (editingId) {
-        const updated = await productApi.update(editingId, data);
+        const updated = await productApi.update(editingId, data, market);
         setProducts(prev => prev.map(p => p.id === editingId ? updated : p));
         showToast('商品更新成功', 'success');
       } else {
-        const created = await productApi.create(data);
+        const created = await productApi.create(data, market);
         setProducts(prev => [created, ...prev]);
         showToast('商品上架成功', 'success');
       }
@@ -167,7 +166,7 @@ export default function Admin() {
   async function handleDelete(id: string) {
     if (!confirm('确认下架该商品？')) return;
     try {
-      await productApi.delete(id);
+      await productApi.delete(id, market);
       setProducts(prev => prev.map(p => p.id === id ? { ...p, status: '已下架' } : p));
       showToast('商品已下架', 'info');
     } catch {
@@ -178,7 +177,7 @@ export default function Admin() {
   // 更新订单状态
   async function handleOrderStatus(orderId: string, status: string) {
     try {
-      const updated = await orderApi.updateStatus(orderId, status);
+      const updated = await orderApi.updateStatus(orderId, status, market);
       setOrders(prev => prev.map(o => o.id === orderId ? updated : o));
       showToast(`订单已更新为「${status}」`, 'success');
     } catch {

@@ -1,10 +1,11 @@
 /**
  * 订单管理页
- * 买家查看订单状态
+ * 买家查看订单状态 — all API calls include the active market.
  */
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { orderApi } from '../api/client';
+import { useMarket } from '../hooks/useMarket';
 import type { Order } from '../types';
 import styles from './Orders.module.css';
 
@@ -17,22 +18,25 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
 };
 
 export default function Orders() {
+  const { market } = useMarket();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('');
 
   useEffect(() => {
-    orderApi.list(filterStatus || undefined)
+    orderApi.list(market, filterStatus || undefined)
       .then(res => setOrders(res.data))
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [filterStatus]);
+  }, [filterStatus, market]);
 
   return (
     <div className="page">
       <div className="container">
         <div className={styles.header}>
-          <h1>我的订单</h1>
+          <h1>
+            {market === 'UK' ? 'My Orders' : market === 'HK' ? '我的訂單' : '我的订单'}
+          </h1>
         </div>
 
         {/* 状态筛选 */}
@@ -43,7 +47,7 @@ export default function Orders() {
               className={`${styles.tab} ${filterStatus === s ? styles.tabActive : ''}`}
               onClick={() => setFilterStatus(s)}
             >
-              {s || '全部'}
+              {s || (market === 'UK' ? 'All' : '全部')}
             </button>
           ))}
         </div>
@@ -52,16 +56,22 @@ export default function Orders() {
           <div className="loading-spinner"><div className="spinner" /></div>
         ) : orders.length === 0 ? (
           <div className="empty-state">
-            <h3>暂无订单</h3>
-            <p>开始选购心仪的奢品吧</p>
-            <Link to="/products" className="btn btn-primary">去逛逛</Link>
+            <h3>
+              {market === 'UK' ? 'No orders yet' : market === 'HK' ? '暫無訂單' : '暂无订单'}
+            </h3>
+            <p>{market === 'UK' ? 'Start shopping to see your orders here.' : '开始选购心仪的奢品吧'}</p>
+            <Link to="/products" className="btn btn-primary">
+              {market === 'UK' ? 'Browse Now' : '去逛逛'}
+            </Link>
           </div>
         ) : (
           <div className={styles.orderList}>
             {orders.map(order => (
               <div key={order.id} className={styles.orderCard}>
                 <div className={styles.orderTop}>
-                  <span className={styles.orderId}>订单号: {order.id}</span>
+                  <span className={styles.orderId}>
+                    {market === 'UK' ? 'Order' : '订单号'}: {order.id}
+                  </span>
                   <span
                     className={styles.statusBadge}
                     style={{ color: STATUS_CONFIG[order.status]?.color, borderColor: STATUS_CONFIG[order.status]?.color }}
@@ -79,7 +89,9 @@ export default function Orders() {
                     <p className={styles.buyerAddress}>{order.buyerInfo.address}</p>
                   </div>
                   <div className={styles.orderPrice}>
-                    <span className={styles.totalLabel}>实付金额</span>
+                    <span className={styles.totalLabel}>
+                      {market === 'UK' ? 'Total' : '实付金额'}
+                    </span>
                     <span className={styles.totalPrice}>
                       ¥{order.totalPrice.toLocaleString()}
                     </span>
@@ -87,10 +99,15 @@ export default function Orders() {
                 </div>
 
                 <div className={styles.orderMeta}>
-                  <span>下单时间: {new Date(order.createdAt).toLocaleString('zh-CN')}</span>
+                  <span>
+                    {market === 'UK' ? 'Placed: ' : '下单时间: '}
+                    {new Date(order.createdAt).toLocaleString(
+                      market === 'UK' ? 'en-GB' : 'zh-CN',
+                    )}
+                  </span>
                   {order.product && (
                     <Link to={`/products/${order.productId}`} className={styles.viewProduct}>
-                      查看商品 →
+                      {market === 'UK' ? 'View Item →' : '查看商品 →'}
                     </Link>
                   )}
                 </div>

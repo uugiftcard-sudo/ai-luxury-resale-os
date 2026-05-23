@@ -101,9 +101,9 @@ const PHONE_PATTERN: Record<string, RegExp> = {
 };
 
 export default function Cart() {
-  const { items, removeItem, clearCart, totalPrice } = useCart();
+  const { items, removeItem, clearCart } = useCart();
   const { showToast } = useToast();
-  const { market, config } = useMarket();
+  const { market } = useMarket();
   const navigate = useNavigate();
 
   const [buyerName, setBuyerName] = useState('');
