@@ -7,7 +7,7 @@
  *
  * Status: STUB — implement actual listing generation + platform APIs.
  */
-import type { Product, Listing, ProofPack, Platform } from "@luxury/db";
+import type { Product, Listing, ProofPack, Platform, Language } from "@luxury/db";
 
 export interface ListingGenOptions {
   platform: Platform;

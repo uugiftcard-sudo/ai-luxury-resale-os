@@ -13,14 +13,17 @@ export type ProductCondition =
   | '轻微使用痕迹'
   | '有明显使用痕迹';
 
+// 市场范围
+export type MarketScope = 'UK' | 'HK' | 'CN' | 'ALL';
+
 // 商品接口
 export interface Product {
   id: string;
   title: string;           // 商品标题
   brand: string;           // 品牌：Gucci, Prada, Chanel, etc.
   category: string;        // 分类：包、衣服、鞋、配饰
-  price: number;            // 售价
-  originalPrice: number;    // 原价
+  price: number;            // 售价 (CNY)
+  originalPrice: number;    // 原价 (CNY)
   condition: ProductCondition;
   size: string;             // 尺寸
   description: string;      // 商品描述
@@ -29,6 +32,7 @@ export interface Product {
   status: ProductStatus;
   createdAt: string;
   updatedAt?: string;
+  market?: MarketScope;     // 所属市场：UK/HK/CN/ALL，未定义时默认ALL
 }
 
 // 订单状态
