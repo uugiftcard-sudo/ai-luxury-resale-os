@@ -1,4 +1,6 @@
 /* Cart.module.css */
+
+/* ── Header ──────────────────────────────────────────────────── */
 .header {
   display: flex;
   align-items: center;
@@ -8,9 +10,7 @@
   margin-bottom: var(--space-xl);
 }
 
-.header h1 {
-  font-size: 1.8rem;
-}
+.header h1 { font-size: 1.8rem; }
 
 .itemCount {
   font-size: 0.85rem;
@@ -20,7 +20,64 @@
   border-radius: var(--radius-full);
 }
 
-/* 布局 */
+/* ── Progress Steps ─────────────────────────────────────────── */
+.progressSteps {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: var(--space-xl);
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  transition: color var(--transition-fast);
+}
+
+.step.active { color: var(--color-text-primary); }
+.step.done { color: var(--color-success); }
+
+.stepNum {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  transition: all var(--transition-fast);
+}
+
+.step.active .stepNum {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.step.done .stepNum {
+  border-color: var(--color-success);
+  background: var(--color-success);
+  color: #fff;
+}
+
+.stepLine {
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+  margin: 0 var(--space-sm);
+}
+
+.stepLine.done {
+  background: var(--color-success);
+}
+
+/* ── Layout ──────────────────────────────────────────────────── */
 .layout {
   display: grid;
   grid-template-columns: 1fr 380px;
@@ -28,7 +85,7 @@
   align-items: start;
 }
 
-/* 商品列表 */
+/* ── Items ────────────────────────────────────────────────────── */
 .items {
   display: flex;
   flex-direction: column;
@@ -43,11 +100,12 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border-light);
   border-radius: var(--radius-md);
-  transition: box-shadow var(--transition-fast);
+  transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
 }
 
 .item:hover {
-  box-shadow: var(--shadow-sm);
+  border-color: var(--color-border);
+  box-shadow: var(--shadow-card);
 }
 
 .itemImg {
@@ -66,19 +124,14 @@
   transition: transform var(--transition-base);
 }
 
-.itemImg:hover img {
-  transform: scale(1.05);
-}
+.itemImg:hover img { transform: scale(1.05); }
 
-.itemInfo {
-  flex: 1;
-  min-width: 0;
-}
+.itemInfo { flex: 1; min-width: 0; }
 
 .itemBrand {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
   text-transform: uppercase;
   color: var(--color-text-muted);
   margin-bottom: 4px;
@@ -92,17 +145,12 @@
   display: block;
   margin-bottom: 8px;
   line-height: 1.4;
+  transition: color var(--transition-fast);
 }
 
-.itemTitle:hover {
-  color: var(--color-accent);
-}
+.itemTitle:hover { color: var(--color-accent); }
 
-.itemMeta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+.itemMeta { display: flex; align-items: center; gap: 8px; }
 
 .itemSize {
   font-size: 0.75rem;
@@ -113,7 +161,7 @@
 }
 
 .itemPrice {
-  font-family: var(--font-display);
+  font-family: var(--font-serif);
   font-size: 1.1rem;
   font-weight: 600;
   color: var(--color-text-primary);
@@ -141,10 +189,10 @@
   background: #fce4ec;
 }
 
-/* 结算侧栏 */
+/* ── Sidebar ──────────────────────────────────────────────────── */
 .sidebar {
   position: sticky;
-  top: 100px;
+  top: 96px;
 }
 
 .summary {
@@ -152,6 +200,7 @@
   border: 1px solid var(--color-border-light);
   border-radius: var(--radius-lg);
   padding: var(--space-xl);
+  box-shadow: var(--shadow-card);
 }
 
 .summaryTitle {
@@ -204,36 +253,42 @@
   text-align: center;
 }
 
-/* 空状态 */
+/* ── Empty State ─────────────────────────────────────────────── */
 .empty {
   text-align: center;
-  padding: var(--space-3xl);
+  padding: var(--space-3xl) var(--space-xl);
 }
 
 .emptyIcon {
   display: flex;
   justify-content: center;
   margin-bottom: var(--space-lg);
-  color: var(--color-border);
+  color: var(--color-border-light);
 }
 
 .empty h2 {
   font-family: var(--font-serif);
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   margin-bottom: var(--space-sm);
+  color: var(--color-text-primary);
 }
 
 .empty p {
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
   margin-bottom: var(--space-xl);
 }
 
-/* 响应式 */
+/* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 900px) {
   .layout {
     grid-template-columns: 1fr;
   }
+  .sidebar { position: static; }
+  .progressSteps { display: none; }
+}
 
-  .sidebar {
-    position: static;
-  }
+@media (max-width: 480px) {
+  .item { gap: var(--space-md); }
+  .itemImg { width: 72px; height: 72px; }
 }

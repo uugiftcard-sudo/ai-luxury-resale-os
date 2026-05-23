@@ -1,4 +1,6 @@
 /* ProductDetail.module.css */
+
+/* ── Breadcrumb ───────────────────────────────────────────────── */
 .breadcrumb {
   display: flex;
   align-items: center;
@@ -15,21 +17,22 @@
   cursor: pointer;
   font-size: 0.82rem;
   transition: color var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .backBtn:hover {
   color: var(--color-text-primary);
 }
 
-.breadcrumb span {
-  color: var(--color-text-muted);
-}
-
+.breadcrumb span { color: var(--color-text-muted); }
 .breadcrumb span:last-child {
   color: var(--color-text-primary);
   font-weight: 500;
 }
 
+/* ── Loading ──────────────────────────────────────────────────── */
 .loading {
   display: flex;
   justify-content: center;
@@ -37,23 +40,24 @@
   min-height: 400px;
 }
 
-/* 布局 */
+/* ── Detail Grid ──────────────────────────────────────────────── */
 .detail {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-3xl);
   align-items: start;
+  animation: fadeSlideUp 600ms ease-out both;
 }
 
-/* 图库 */
+/* ── Gallery ──────────────────────────────────────────────────── */
 .gallery {
   position: sticky;
-  top: 100px;
+  top: 96px;
 }
 
 .mainImage {
   position: relative;
-  aspect-ratio: 1;
+  aspect-ratio: 3 / 4;
   border-radius: var(--radius-lg);
   overflow: hidden;
   background: var(--color-surface-alt);
@@ -85,10 +89,7 @@
   overflow-x: auto;
   scrollbar-width: none;
 }
-
-.thumbnails::-webkit-scrollbar {
-  display: none;
-}
+.thumbnails::-webkit-scrollbar { display: none; }
 
 .thumb {
   flex-shrink: 0;
@@ -102,20 +103,10 @@
   background: none;
   padding: 0;
 }
+.thumb img { width: 100%; height: 100%; object-fit: cover; }
+.thumbActive { border-color: var(--color-accent); }
 
-.thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.thumbActive {
-  border-color: var(--color-accent);
-}
-
-/* 信息区 */
-.info {}
-
+/* ── Info ─────────────────────────────────────────────────────── */
 .brandTag {
   display: inline-block;
   font-size: 0.72rem;
@@ -130,12 +121,13 @@
 }
 
 .title {
-  font-size: 1.5rem;
+  font-family: var(--font-serif);
+  font-size: 1.6rem;
   line-height: 1.3;
   margin-bottom: var(--space-lg);
 }
 
-/* 价格 */
+/* ── Price ────────────────────────────────────────────────────── */
 .priceBlock {
   display: flex;
   align-items: baseline;
@@ -147,9 +139,9 @@
 
 .price {
   font-family: var(--font-display);
-  font-size: 2.2rem;
+  font-size: 2.4rem;
   font-weight: 700;
-  color: var(--color-text-primary);
+  color: var(--color-accent);
 }
 
 .originalPrice {
@@ -166,7 +158,7 @@
   border-radius: var(--radius-full);
 }
 
-/* 属性 */
+/* ── Attributes ───────────────────────────────────────────────── */
 .attrs {
   display: flex;
   flex-direction: column;
@@ -205,7 +197,7 @@
   margin: var(--space-lg) 0;
 }
 
-/* 操作 */
+/* ── Actions ──────────────────────────────────────────────────── */
 .actions {
   display: flex;
   gap: var(--space-md);
@@ -217,10 +209,11 @@
   cursor: not-allowed;
 }
 
-/* 服务 */
+/* ── Services ─────────────────────────────────────────────────── */
 .services {
-  display: flex;
-  gap: var(--space-lg);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-sm);
 }
 
 .service {
@@ -229,9 +222,13 @@
   gap: 6px;
   font-size: 0.78rem;
   color: var(--color-success);
+  background: var(--color-surface-alt);
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-light);
 }
 
-/* 描述 */
+/* ── Description ──────────────────────────────────────────────── */
 .descSection {
   margin-top: var(--space-3xl);
   padding-top: var(--space-2xl);
@@ -255,7 +252,7 @@
   color: var(--color-text-muted);
 }
 
-/* 模态框 */
+/* ── Modal ───────────────────────────────────────────────────── */
 .modalHeader {
   display: flex;
   align-items: center;
@@ -281,9 +278,9 @@
   color: var(--color-text-muted);
   transition: all var(--transition-fast);
 }
-
 .closeBtn:hover {
   background: var(--color-surface-alt);
+  color: var(--color-text-primary);
 }
 
 .modalProduct {
@@ -294,6 +291,7 @@
   background: var(--color-surface-alt);
   border-radius: var(--radius-md);
   margin-bottom: var(--space-lg);
+  border: 1px solid var(--color-border-light);
 }
 
 .modalImg {
@@ -334,28 +332,26 @@
   background: var(--color-surface-alt);
   border-radius: var(--radius-md);
   font-weight: 600;
+  border: 1px solid var(--color-border-light);
 }
 
 .totalPrice {
   font-family: var(--font-display);
   font-size: 1.4rem;
-  color: var(--color-text-primary);
+  color: var(--color-accent);
 }
 
-/* 响应式 */
+/* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 900px) {
   .detail {
     grid-template-columns: 1fr;
     gap: var(--space-xl);
   }
-
-  .gallery {
-    position: static;
-  }
+  .gallery { position: static; }
+  .services { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 480px) {
-  .actions {
-    flex-direction: column;
-  }
+  .actions { flex-direction: column; }
+  .services { grid-template-columns: 1fr; }
 }
