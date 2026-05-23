@@ -2,7 +2,7 @@
  * Inventory API — routes requests through mockStorage.
  * Swap to real Supabase endpoints once configured.
  */
-import { inventoryStorage, StoredInventoryItem, StoredInventoryTransaction } from './mockStorage';
+import { inventoryStorage, StoredInventoryItem, StoredInventoryTransaction } from '../lib/mockStorage';
 import type { InventoryItem, InventoryTransaction, InventoryFormData, InventoryStats } from '../types/warehouse';
 
 function toItem(s: StoredInventoryItem): InventoryItem {
@@ -34,7 +34,7 @@ export const inventoryApi = {
   },
 
   create(form: InventoryFormData): Promise<InventoryItem> {
-    const item = inventoryStorage.createItem({ ...form, createdAt: new Date().toISOString() });
+    const item = inventoryStorage.createItem(form);
     return Promise.resolve(toItem(item));
   },
 
@@ -72,7 +72,6 @@ export const inventoryApi = {
         currentStock: data.quantity,
         minStockThreshold: 3,
         unitCost: data.unitCost,
-        createdAt: new Date().toISOString(),
       });
     }
 
@@ -117,10 +116,10 @@ export const inventoryApi = {
   getStats(): Promise<InventoryStats> {
     const items = inventoryStorage.getItems();
     const totalSKUs = items.length;
-    const totalStock = items.reduce((sum, i) => sum + i.currentStock, 0);
-    const lowStockCount = items.filter(i => i.currentStock > 0 && i.currentStock <= i.minStockThreshold).length;
-    const outOfStockCount = items.filter(i => i.currentStock === 0).length;
-    const totalValue = items.reduce((sum, i) => sum + (i.currentStock * (i.unitCost ?? 0)), 0);
+    const totalStock = items.reduce<number>((sum, i) => sum + i.currentStock, 0);
+    const lowStockCount = items.filter((i: StoredInventoryItem) => i.currentStock > 0 && i.currentStock <= i.minStockThreshold).length;
+    const outOfStockCount = items.filter((i: StoredInventoryItem) => i.currentStock === 0).length;
+    const totalValue = items.reduce<number>((sum, i) => sum + (i.currentStock * (i.unitCost ?? 0)), 0);
     return Promise.resolve({ totalSKUs, totalStock, lowStockCount, outOfStockCount, totalValue });
   },
 

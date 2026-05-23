@@ -5,7 +5,7 @@
 import {
   supportStorage,
   StoredTicket,
-} from './mockStorage';
+} from '../lib/mockStorage';
 import type {
   SupportTicket,
   SupportTicketFormData,

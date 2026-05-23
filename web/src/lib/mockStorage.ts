@@ -204,12 +204,13 @@ export const inventoryStorage = {
     return this.getItems().find(i => i.id === id) ?? null;
   },
 
-  createItem(data: Omit<StoredInventoryItem, 'id' | 'createdAt'>): StoredInventoryItem {
+  createItem(data: Omit<StoredInventoryItem, 'id' | 'createdAt' | 'minStockThreshold'> & { id?: string; createdAt?: string; minStockThreshold?: number }): StoredInventoryItem {
     const items = this.getItems();
     const item: StoredInventoryItem = {
       ...data,
-      id: generateId(),
-      createdAt: new Date().toISOString(),
+      id: data.id ?? generateId(),
+      createdAt: data.createdAt ?? new Date().toISOString(),
+      minStockThreshold: data.minStockThreshold ?? 3,
     };
     items.push(item);
     write(STORAGE_KEYS.INVENTORY, items);

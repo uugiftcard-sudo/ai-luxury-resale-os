@@ -139,7 +139,7 @@ export default function AdminWarehouse() {
             type="inbound"
             items={items}
             onSubmit={async (data) => {
-              await inbound(data);
+              await inbound({ productName: data.productName!, quantity: data.quantity, referenceNo: data.referenceNo, notes: data.notes, operator: data.operator });
               setActiveTab('transactions');
             }}
           />
@@ -151,7 +151,7 @@ export default function AdminWarehouse() {
             type="outbound"
             items={items}
             onSubmit={async (data) => {
-              await outbound(data as Parameters<typeof outbound>[0]);
+              await outbound({ inventoryId: data.inventoryId!, quantity: data.quantity, referenceNo: data.referenceNo, notes: data.notes, operator: data.operator });
               setActiveTab('transactions');
             }}
           />
@@ -239,13 +239,13 @@ function AdminInOutForm({
 }: {
   type: 'inbound' | 'outbound';
   items: import('../types/warehouse').InventoryItem[];
-  onSubmit: (data: Parameters<typeof inbound>[0] | Parameters<typeof outbound>[0]) => Promise<void>;
+  onSubmit: (data: { inventoryId?: string; productName?: string; quantity: number; referenceNo?: string; notes?: string; operator?: string }) => Promise<void>;
 }) {
   const [form, setForm] = useState({ inventoryId: '', productName: '', quantity: 1, referenceNo: '', notes: '', operator: '' });
   const [submitting, setSubmitting] = useState(false);
 
   return (
-    <form className={styles.adminForm} onSubmit={async e => { e.preventDefault(); setSubmitting(true); try { await onSubmit(form as any); } finally { setSubmitting(false); } }}>
+    <form className={styles.adminForm} onSubmit={async e => { e.preventDefault(); setSubmitting(true); try { await onSubmit(form); } finally { setSubmitting(false); } }}>
       <h3>{type === 'inbound' ? '入庫記錄' : '出庫記錄'}</h3>
       <div className={styles.formGrid}>
         {type === 'inbound' ? (
