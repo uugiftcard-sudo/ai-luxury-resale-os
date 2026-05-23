@@ -1,6 +1,6 @@
 /**
  * CLOTH API 客户端
- * 封装所有与后端 API 的交互
+ * Multi-market: each region has its own API base URL and currency display.
  */
 import type {
   ApiResponse,
@@ -12,15 +12,22 @@ import type {
   ProductFilter,
   OrderFormData,
 } from '../types';
+import { Market, MARKET_CONFIGS, convertPrice } from '../types/market';
 
-const BASE_URL = '/api';
+/** Per-market API base URL — all markets share the same Express server,
+ *  differentiated by the `market` query param. */
+function apiBase(market: Market): string {
+  return `/api`;
+}
 
 async function request<T>(
+  baseUrl: string,
   path: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
 ): Promise<ApiResponse<T>> {
   try {
-    const res = await fetch(`${BASE_URL}${path}`, {
+    const url = `${baseUrl}${path}`;
+    const res = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
         ...options.headers,
@@ -39,15 +46,26 @@ async function request<T>(
     if (err instanceof Error) {
       throw err;
     }
-    throw new Error('网络请求失败，请检查网络连接', { cause: err });
+    throw new Error('网络请求失败，请检查网络连接');
   }
 }
 
-// ==================== 商品 API ====================
+/** Currency-aware price display helper used throughout the app. */
+export function displayPrice(cnyPrice: number, market: Market): string {
+  const config = MARKET_CONFIGS[market];
+  const amount = convertPrice(cnyPrice, market);
+  return `${config.currencySymbol}${amount.toLocaleString(config.locale)}`;
+}
+
+// ── Product API ────────────────────────────────────────────────────────────────
+
 export const productApi = {
-  /** 商品列表（支持筛选分页） */
-  list: (filter: ProductFilter = {}): Promise<PaginatedResponse<Product>> => {
-    const params = new URLSearchParams();
+  list: (
+    market: Market,
+    filter: ProductFilter = {},
+  ): Promise<PaginatedResponse<Product>> => {
+    const base = apiBase(market);
+    const params = new URLSearchParams({ market });
     if (filter.brand) params.set('brand', filter.brand);
     if (filter.category) params.set('category', filter.category);
     if (filter.condition) params.set('condition', filter.condition);
@@ -59,67 +77,84 @@ export const productApi = {
     if (filter.limit) params.set('limit', String(filter.limit));
 
     const query = params.toString();
-    return request<PaginatedResponse<Product>>(`/products${query ? `?${query}` : ''}`).then(r => r.data!);
+    return request<PaginatedResponse<Product>>(
+      base,
+      `/products${query ? `?${query}` : ''}`,
+    ).then(r => r.data!);
   },
 
-  /** 商品详情 */
-  get: (id: string): Promise<Product> =>
-    request<Product>(`/products/${id}`).then(r => r.data!),
+  get: (id: string, market: Market): Promise<Product> => {
+    const base = apiBase(market);
+    return request<Product>(base, `/products/${id}?market=${market}`).then(r => r.data!);
+  },
 
-  /** 上架商品 */
-  create: (data: Partial<Product>): Promise<Product> =>
-    request<Product>('/products', {
+  create: (data: Partial<Product>, market: Market): Promise<Product> => {
+    const base = apiBase(market);
+    return request<Product>(base, '/products', {
       method: 'POST',
       body: JSON.stringify(data),
-    }).then(r => r.data!),
+    }).then(r => r.data!);
+  },
 
-  /** 更新商品 */
-  update: (id: string, data: Partial<Product>): Promise<Product> =>
-    request<Product>(`/products/${id}`, {
+  update: (id: string, data: Partial<Product>, market: Market): Promise<Product> => {
+    const base = apiBase(market);
+    return request<Product>(base, `/products/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
-    }).then(r => r.data!),
-
-  /** 下架商品 */
-  delete: (id: string): Promise<Product> =>
-    request<Product>(`/products/${id}`, { method: 'DELETE' }).then(r => r.data!),
-};
-
-// ==================== 订单 API ====================
-export const orderApi = {
-  /** 订单列表 */
-  list: (status?: string): Promise<PaginatedResponse<Order>> => {
-    const params = status ? `?status=${status}` : '';
-    return request<PaginatedResponse<Order>>(`/orders${params}`).then(r => r.data!);
+    }).then(r => r.data!);
   },
 
-  /** 订单详情 */
-  get: (id: string): Promise<Order> =>
-    request<Order>(`/orders/${id}`).then(r => r.data!),
+  delete: (id: string, market: Market): Promise<Product> => {
+    const base = apiBase(market);
+    return request<Product>(base, `/products/${id}`, {
+      method: 'DELETE',
+    }).then(r => r.data!);
+  },
+};
 
-  /** 创建订单 */
-  create: (data: OrderFormData): Promise<Order> =>
-    request<Order>('/orders', {
+// ── Order API ─────────────────────────────────────────────────────────────────
+
+export const orderApi = {
+  list: (market: Market, status?: string): Promise<PaginatedResponse<Order>> => {
+    const base = apiBase(market);
+    const params = status ? `?status=${status}&market=${market}` : `?market=${market}`;
+    return request<PaginatedResponse<Order>>(base, `/orders${params}`).then(r => r.data!);
+  },
+
+  get: (id: string, market: Market): Promise<Order> => {
+    const base = apiBase(market);
+    return request<Order>(base, `/orders/${id}?market=${market}`).then(r => r.data!);
+  },
+
+  create: (data: OrderFormData, market: Market): Promise<Order> => {
+    const base = apiBase(market);
+    return request<Order>(base, '/orders', {
       method: 'POST',
       body: JSON.stringify(data),
-    }).then(r => r.data!),
+    }).then(r => r.data!);
+  },
 
-  /** 更新订单状态 */
-  updateStatus: (id: string, status: string): Promise<Order> =>
-    request<Order>(`/orders/${id}`, {
+  updateStatus: (id: string, status: string, market: Market): Promise<Order> => {
+    const base = apiBase(market);
+    return request<Order>(base, `/orders/${id}`, {
       method: 'PUT',
       body: JSON.stringify({ status }),
-    }).then(r => r.data!),
+    }).then(r => r.data!);
+  },
 };
 
-// ==================== 品牌 API ====================
+// ── Brand & Category APIs ─────────────────────────────────────────────────────
+
 export const brandApi = {
-  list: (): Promise<Brand[]> =>
-    request<Brand[]>('/brands').then(r => r.data ?? []),
+  list: (market: Market): Promise<Brand[]> => {
+    const base = apiBase(market);
+    return request<Brand[]>(base, `/brands?market=${market}`).then(r => r.data ?? []);
+  },
 };
 
-// ==================== 分类 API ====================
 export const categoryApi = {
-  list: (): Promise<Category[]> =>
-    request<Category[]>('/categories').then(r => r.data ?? []),
+  list: (market: Market): Promise<Category[]> => {
+    const base = apiBase(market);
+    return request<Category[]>(base, `/categories?market=${market}`).then(r => r.data ?? []);
+  },
 };
