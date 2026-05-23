@@ -16,7 +16,7 @@ import { Market, MARKET_CONFIGS, convertPrice } from '../types/market';
 
 /** Per-market API base URL — all markets share the same Express server,
  *  differentiated by the `market` query param. */
-function apiBase(market: Market): string {
+function apiBase(_market: Market): string {
   return `/api`;
 }
 
@@ -46,7 +46,7 @@ async function request<T>(
     if (err instanceof Error) {
       throw err;
     }
-    throw new Error('网络请求失败，请检查网络连接');
+    throw new Error('网络请求失败，请检查网络连接', { cause: err });
   }
 }
 
