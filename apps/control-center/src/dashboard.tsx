@@ -9,8 +9,6 @@ import {
   computeStats,
 } from "./api/dashboardApi.js";
 import type {
-  DashboardProduct,
-  DashboardOrder,
   DashboardStats,
   ActivityItem,
   AgentRun,
