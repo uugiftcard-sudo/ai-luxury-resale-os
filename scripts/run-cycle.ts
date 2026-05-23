@@ -24,6 +24,7 @@ let dryRun = false;
 let jsonOutput = false;
 let outputPath: string | null = null;
 let skipScrape = false;
+let execute = false; // NEW: run the execution engine after agents
 
 for (let i = 0; i < args.length; i++) {
   switch (args[i]) {
@@ -33,6 +34,7 @@ for (let i = 0; i < args.length; i++) {
     case "--json": jsonOutput = true; break;
     case "--output": case "-o": outputPath = args[++i]; jsonOutput = true; break;
     case "--no-scrape": skipScrape = true; break;
+    case "--execute": case "-x": execute = true; break;
     case "--help": case "-h":
       console.log(`Usage: npm run agent:run -- [options]
 
@@ -43,6 +45,7 @@ Options:
   --json               Output machine-readable JSON to stdout
   --output, -o <path> Write JSON report to file (implies --json)
   --no-scrape          Skip scraping phase (use with caution)
+  --execute, -x        Run the Execution Engine after agents (post to Discord, WhatsApp, etc.)
   --help, -h           Show this message
 
 Agent IDs: sourcing, listing, content, video, fulfilment, community, risk, report
@@ -436,11 +439,56 @@ async function main() {
     startedAt,
   };
 
+  // Phase 3: Execution Engine (only with --execute flag)
+  let execResult: any = null;
+  if (execute) {
+    console.log(c(BLU, `\n  [execute] Running execution engine…`));
+    try {
+      const { ExecutionEngine } = await import("../agent-tasks/engine.js");
+
+      // Build the Discord channels map from env vars
+      const discordChannels: Record<string, string> = {
+        UK: process.env["DISCORD_VIP_CHANNEL_UK"] ?? "",
+        HK: process.env["DISCORD_VIP_CHANNEL_HK"] ?? "",
+      };
+
+      // Collect outputs from dispatcher results
+      const { runDispatcher } = await import("../agent-tasks/dispatcher.js");
+      const fullResult = await runDispatcher({
+        markets: (market ? [market] : ["UK", "HK"]) as ("UK" | "HK")[],
+        agents: (agents as any) ?? undefined,
+        dryRun,
+        includeReport: true,
+      });
+
+      const execOutputs = {
+        listingTasks: (fullResult as any).listingTasks ?? [],
+        contentTasks: (fullResult as any).contentTasks ?? [],
+        captionsByPlatform: (fullResult as any).captionsByPlatform ?? {},
+        sourcingItems: (fullResult as any).sourcingItems ?? [],
+        riskAlerts: (fullResult as any).riskAlerts ?? [],
+      };
+
+      execResult = await ExecutionEngine.runFromAgentOutputs(
+        execOutputs,
+        {
+          shopifyPayloads: new Map(),
+          ebayPayloads: new Map(),
+          discordChannels,
+        },
+        { dryRun, bypassApproval: dryRun }
+      );
+      sep();
+    } catch (err) {
+      console.error(`  ${c(RED, "⚠  Execution engine error:")}`, err);
+    }
+  }
+
   // Phase 4: Post to Discord (non-blocking, fire-and-forget)
   postToDiscord(result).catch(() => {});
 
   // Phase 5: Console output
-  printResults(result);
+  printResults(result, execResult);
 
   // Phase 6: JSON output
   if (jsonOutput) outputJson(result);
@@ -448,12 +496,15 @@ async function main() {
   // Phase 7: Exit code
   const hasEscalations = result.summary.totalEscalations > 0;
   const hasErrors = result.summary.totalErrors > 0 || result.summary.marketsFailed.length > 0;
+  const execHadFailures = execResult && (execResult.failed > 0 || execResult.pendingApproval?.length > 0);
+
   if (hasErrors) process.exit(1);
-  if (hasEscalations) process.exit(1); // escalate = needs attention
+  if (hasEscalations) process.exit(1);
+  if (execHadFailures && !dryRun) process.exit(1); // execution failed non-dry-run
   process.exit(0);
 }
 
-function printResults(result: CycleResult): void {
+function printResults(result: CycleResult, execResult?: any): void {
   const { agents, summary, scrapedCount } = result;
 
   console.log(`\n${bold("📊 Agent Results")}`);
@@ -497,6 +548,24 @@ function printResults(result: CycleResult): void {
   if (summary.marketsFailed.length > 0) {
     console.log(c(RED, `  ❌ Markets failed:  ${summary.marketsFailed.join(", ")}`));
   }
+
+  // Execution engine results
+  if (execResult) {
+    sep();
+    console.log(`\n${bold("⚡ Execution Results")}`);
+    sep();
+    const e = execResult;
+    console.log(`  ${c(BLU, "Executed:")}     ${c(B, String(e.executed))}`);
+    console.log(`  ${c(BLU, "Succeeded:")}    ${e.succeeded > 0 ? c(GRN, String(e.succeeded)) : "0"}`);
+    console.log(`  ${c(BLU, "Failed:")}        ${e.failed > 0 ? c(RED, String(e.failed)) : "0"}`);
+    console.log(`  ${c(BLU, "Pending:")}      ${e.pendingApproval?.length > 0 ? c(YEL, String(e.pendingApproval.length)) : "0"}`);
+    if (e.pendingApproval?.length > 0) {
+      for (const t of e.pendingApproval) {
+        console.log(`       ${c(YEL, "⏳ " + t.summary.slice(0, 80))}`);
+      }
+    }
+  }
+
   console.log("");
 }
 

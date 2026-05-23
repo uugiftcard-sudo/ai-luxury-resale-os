@@ -44,6 +44,7 @@ export async function runDispatcher(options: DispatcherOptions = {}): Promise<Di
   const allListingTasks: ListingTask[] = [];
   const allContentTasks: ContentTask[] = [];
   const allRiskAlerts: RiskAlert[] = [];
+  const captionsByPlatformMap: Record<string, string[]> = {};
 
   const completedMarkets: string[] = [];
   const failedMarkets: string[] = [];
@@ -93,9 +94,14 @@ export async function runDispatcher(options: DispatcherOptions = {}): Promise<Di
       // ── Content ───────────────────────────────────────────────────────
       if (requestedAgentIds.includes("content")) {
         promises.push(
-          runContentAgent(marketProducts, market).then(({ result, tasks }) => {
+          runContentAgent(marketProducts, market).then(({ result, tasks, captionsByPlatform }) => {
             marketAgentResults.push(result);
             allContentTasks.push(...tasks);
+            // Merge captions into global map
+            for (const [key, captions] of Object.entries(captionsByPlatform ?? {})) {
+              if (!captionsByPlatformMap[key]) captionsByPlatformMap[key] = [];
+              captionsByPlatformMap[key].push(...captions);
+            }
           })
         );
       }
@@ -189,6 +195,12 @@ export async function runDispatcher(options: DispatcherOptions = {}): Promise<Di
     totalDurationMs: Date.now() - start,
     markets: requestedMarkets,
     agents: allAgentResults,
+    // Pass through all task outputs so the Execution Engine can consume them
+    listingTasks: allListingTasks,
+    contentTasks: allContentTasks,
+    captionsByPlatform: captionsByPlatformMap,
+    sourcingItems: allSourcingItems,
+    riskAlerts: allRiskAlerts,
     summary: {
       totalItemsProcessed: allAgentResults.reduce((acc, r) => acc + (r.itemsProcessed ?? 0), 0),
       totalTasksGenerated: allAgentResults.reduce((acc, r) => acc + (r.tasksGenerated ?? 0), 0),
