@@ -17,7 +17,7 @@ import { buildControlCenterSnapshot } from "./index.js";
 import {
   sampleProducts, sampleProofPacks, sampleSourcingLeads,
   sampleOrders, sampleLiveSessions, sampleCustomers
-} from "../../scripts/sample-data.js";
+} from "../../../scripts/sample-data.js";
 
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
@@ -162,7 +162,7 @@ function renderDashboard(market: "UK" | "HK") {
     ["Video Assets", stats.allProducts.flatMap((p) => generateProductVideoPack(p, stats.proofBySku.get(p.sku))).length],
   ];
   for (const [name, count] of stages) {
-    console.log(`  ${name.padEnd(22)} ${label(GREEN, String(count).padStart(4))}`);
+    console.log(`  ${String(name).padEnd(22)} ${label(GREEN, String(count).padStart(4))}`);
   }
 
   spacer();
@@ -214,7 +214,7 @@ async function cmdListProducts(market: "UK" | "HK") {
 async function cmdScoreLead(market: "UK" | "HK") {
   const marketLeads = leads.findAll().filter((l) => l.market === market);
   if (!marketLeads.length) { console.log(dim("  No sourcing leads in storage. Using sample leads...")); }
-  const allLeads = marketLeads.length ? marketLeads : sampleSourcingLeads.filter((l) => l.market === market);
+  const allLeads = marketLeads.length ? marketLeads : sampleSourcingLeads.filter((l: SourcingLead) => l.market === market);
   for (const lead of allLeads) {
     const result = scoreSourcingLead(lead);
     const decColor = result.decision === "buy" ? GREEN : result.decision === "watch" ? YELLOW : RED;
@@ -311,7 +311,7 @@ async function cmdFulfilment(market: "UK" | "HK") {
 
 async function cmdLiveSession(market: "UK" | "HK") {
   const allSessions = liveSessions.findAll().filter((s) => s.market === market);
-  const all = sampleLiveSessions.filter((s) => s.market === market);
+  const all = sampleLiveSessions.filter((s: LiveSession) => s.market === market);
   const session = (allSessions.length ? allSessions[0] : all[0])!;
   if (!session) { console.log(dim("  No live session.")); return; }
   const sessionProducts = products.findAll().filter((p) => session.productSkus.includes(p.sku));
@@ -363,7 +363,7 @@ async function cmdAddProduct(market: "UK" | "HK") {
   const product: Product = {
     sku, market, brandStream,
     currency: currency as Product["currency"],
-    language: market === "UK" ? "en-GB" : "zh-Tant-HK",
+    language: market === "UK" ? "en-GB" : "zh-Hant-HK",
     title: title.trim(),
     brand: brand.trim() || undefined,
     category: category.trim() || "general",

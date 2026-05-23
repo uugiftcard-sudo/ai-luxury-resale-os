@@ -21,8 +21,7 @@ import { runFulfilmentAgent } from "./fulfillment-agent.js";
 import { runCommunityAgent } from "./community-agent.js";
 import { runRiskAgent } from "./risk-agent.js";
 import { runReportAgent } from "./report-agent.js";
-
-import { sampleProducts, sampleProofPacks, sampleSourcingLeads } from "../scripts/sample-data.js";
+import { fetchStoreData } from "./store-data.js";
 
 const ALL_AGENTS = ["sourcing", "listing", "content", "video", "fulfillment", "community", "risk"] as const;
 
@@ -49,12 +48,23 @@ export async function runDispatcher(options: DispatcherOptions = {}): Promise<Di
   const completedMarkets: string[] = [];
   const failedMarkets: string[] = [];
 
+  // ── Fetch real data from in-memory store (or API at localhost:3001) ──────
+  const storeData = await fetchStoreData();
+
   // ── Run per-market in series, agents within each market in parallel ──────
   for (const market of requestedMarkets) {
     const marketStart = Date.now();
     const marketAgentResults: AgentResult[] = [];
 
-    console.log(`[dispatcher] Starting ${market} — agents: ${requestedAgentIds.join(", ")}`);
+    // Filter data for this market
+    const marketProducts = storeData.products.filter((p) => p.market === market);
+    const marketProofs = new Map(storeData.proofPacks.filter((p) => p.market === market).map((p) => [p.sku, p]));
+    const marketLeads = storeData.sourcingLeads.filter((l) => l.market === market);
+
+    console.log(
+      `[dispatcher] Starting ${market} — agents: ${requestedAgentIds.join(", ")} | ` +
+      `products: ${marketProducts.length}, leads: ${marketLeads.length}`
+    );
 
     try {
       const promises: Promise<void>[] = [];
@@ -62,10 +72,7 @@ export async function runDispatcher(options: DispatcherOptions = {}): Promise<Di
       // ── Sourcing ───────────────────────────────────────────────────────
       if (requestedAgentIds.includes("sourcing")) {
         promises.push(
-          runSourcingAgent(
-            sampleSourcingLeads.filter((l) => l.market === market),
-            market
-          ).then(({ result, buyQueue, watchQueue, rejected }) => {
+          runSourcingAgent(marketLeads, market).then(({ result, buyQueue, watchQueue }) => {
             marketAgentResults.push(result);
             allSourcingItems.push(...buyQueue, ...watchQueue);
           })
@@ -74,13 +81,8 @@ export async function runDispatcher(options: DispatcherOptions = {}): Promise<Di
 
       // ── Listing ───────────────────────────────────────────────────────
       if (requestedAgentIds.includes("listing")) {
-        const proofs = new Map(sampleProofPacks.map((p) => [p.sku, p]));
         promises.push(
-          runListingAgent(
-            sampleProducts.filter((p) => p.market === market),
-            proofs,
-            market
-          ).then(({ result, tasks }) => {
+          runListingAgent(marketProducts, marketProofs, market).then(({ result, tasks }) => {
             marketAgentResults.push(result);
             allListingTasks.push(...tasks);
           })
@@ -90,24 +92,17 @@ export async function runDispatcher(options: DispatcherOptions = {}): Promise<Di
       // ── Content ───────────────────────────────────────────────────────
       if (requestedAgentIds.includes("content")) {
         promises.push(
-          runContentAgent(sampleProducts.filter((p) => p.market === market), market).then(
-            ({ result, tasks }) => {
-              marketAgentResults.push(result);
-              allContentTasks.push(...tasks);
-            }
-          )
+          runContentAgent(marketProducts, market).then(({ result, tasks }) => {
+            marketAgentResults.push(result);
+            allContentTasks.push(...tasks);
+          })
         );
       }
 
       // ── Video ─────────────────────────────────────────────────────────
       if (requestedAgentIds.includes("video")) {
-        const proofs = new Map(sampleProofPacks.map((p) => [p.sku, p]));
         promises.push(
-          runVideoAgent(
-            sampleProducts.filter((p) => p.market === market),
-            proofs,
-            market
-          ).then(({ result }) => {
+          runVideoAgent(marketProducts, marketProofs, market).then(({ result }) => {
             marketAgentResults.push(result);
           })
         );
@@ -115,13 +110,8 @@ export async function runDispatcher(options: DispatcherOptions = {}): Promise<Di
 
       // ── Fulfilment ────────────────────────────────────────────────────
       if (requestedAgentIds.includes("fulfillment")) {
-        const proofs = new Map(sampleProofPacks.map((p) => [p.sku, p]));
         promises.push(
-          runFulfilmentAgent(
-            sampleProducts.filter((p) => p.market === market),
-            proofs,
-            market
-          ).then(({ result }) => {
+          runFulfilmentAgent(marketProducts, marketProofs, market).then(({ result }) => {
             marketAgentResults.push(result);
           })
         );
@@ -138,13 +128,8 @@ export async function runDispatcher(options: DispatcherOptions = {}): Promise<Di
 
       // ── Risk ─────────────────────────────────────────────────────────
       if (requestedAgentIds.includes("risk")) {
-        const proofs = new Map(sampleProofPacks.map((p) => [p.sku, p]));
         promises.push(
-          runRiskAgent(
-            sampleProducts.filter((p) => p.market === market),
-            proofs,
-            market
-          ).then(({ result, alerts }) => {
+          runRiskAgent(marketProducts, marketProofs, market).then(({ result, alerts }) => {
             marketAgentResults.push(result);
             allRiskAlerts.push(...alerts);
           })
@@ -184,7 +169,7 @@ export async function runDispatcher(options: DispatcherOptions = {}): Promise<Di
   }
 
   // ── Report Agent ────────────────────────────────────────────────────────────
-  const reportResult = await runReportAgent(
+  await runReportAgent(
     runId,
     requestedMarkets as Market[],
     allAgentResults,

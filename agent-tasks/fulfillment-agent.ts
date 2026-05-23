@@ -1,5 +1,5 @@
 import { buildFulfilmentPlan } from "@luxury/order-fulfillment";
-import type { Product, ProofPack, OrderRecord, Money } from "@luxury/db";
+import type { Product, ProofPack, OrderRecord } from "@luxury/db";
 import type { AgentResult } from "./types.js";
 
 export interface FulfilmentAgentOutput {

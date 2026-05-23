@@ -1,5 +1,3 @@
-import { buildControlCenterSnapshot } from "../apps/control-center/src/index.js";
-import { sampleProducts, sampleProofPacks } from "../scripts/sample-data.js";
 import type { AgentResult, DailyReport, SourcingQueueItem, ListingTask, ContentTask, RiskAlert } from "./types.js";
 import type { Market } from "@luxury/db";
 

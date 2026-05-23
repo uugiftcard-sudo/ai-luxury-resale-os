@@ -23,34 +23,24 @@ export async function runListingAgent(
     const proof = proofs.get(product.sku);
     const listings = generateListings(product, proof);
 
-    // Determine priority
-    let priority: "high" | "medium" | "low" = "medium";
-    let reason = "";
+    const priority: "high" | "medium" | "low" = (() => {
+      if (!proof) return "high";
+      if (proof.sourceRecord === "" || proof.detailPhotoRefs.length === 0) return "high";
+      if (product.brandStream === "luxury_resale") return "high";
+      if (product.status === "proof_ready") return "medium";
+      return "low";
+    })();
 
     if (!proof) {
-      priority = "high";
-      reason = "Proof pack missing — blocking listing";
       complianceWarnings.push(`[${product.sku}] No proof pack — listing withheld until proof complete`);
     } else if (proof.sourceRecord === "" || proof.detailPhotoRefs.length === 0) {
-      priority = "high";
-      reason = "Proof incomplete — detail photos or source record missing";
       complianceWarnings.push(`[${product.sku}] Proof incomplete — missing detail photos or source record`);
-    } else if (product.brandStream === "luxury_resale") {
-      priority = "high";
-      reason = "Luxury item — requires full proof before listing";
-    } else if (product.status === "proof_ready") {
-      priority = "medium";
-      reason = "Proof ready — listing can proceed";
-    } else {
-      priority = "low";
-      reason = "Draft — still needs review";
     }
 
     tasks.push({
       product,
       platforms: listings.map((l) => l.platform).filter(Boolean) as string[],
       priority,
-      reason,
     });
 
     // Compliance check: reject any listing with counterfeit/resale-restricted wording
