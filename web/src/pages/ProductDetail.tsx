@@ -159,10 +159,11 @@ export default function ProductDetail() {
       return;
     }
     setSubmitting(true);
+    const currentProduct = product;
     try {
       await orderApi.create(
         {
-          productId: product.id,
+          productId: currentProduct.id,
           buyerInfo: { name: buyerName, phone: buyerPhone, address: buyerAddress },
         },
         market,
