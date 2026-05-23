@@ -340,7 +340,7 @@ export function findOrderById(id: string): Order | undefined {
  * Returns products visible in a given market scope.
  * 'ALL' products appear everywhere; market-specific products only in their region.
  */
-export function filterProductsByMarket(market: string): Product[] {
+export function filterProductsByMarket(market: string) {
   if (!market || market === 'ALL') return products;
   return products.filter(p => p.market === 'ALL' || p.market === market);
 }
