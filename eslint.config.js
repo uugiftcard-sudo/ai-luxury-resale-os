@@ -6,7 +6,7 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
-    ignores: ['node_modules', 'dist', '.turbo', '*.config.js', '*.config.ts'],
+    ignores: ['node_modules', 'dist', '.turbo', '*.config.js', '*.config.ts', '**/dist/**'],
     rules: {
       'no-console': 'warn',
       '@typescript-eslint/no-explicit-any': 'off',
