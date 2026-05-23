@@ -7,7 +7,10 @@ import { Link } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import { productApi, brandApi, categoryApi } from '../api/client';
 import type { Product, Brand, Category } from '../types';
+import { Market } from '../types/market';
 import styles from './Home.module.css';
+
+const CN_MARKET: Market = 'CN';
 
 export default function Home() {
   const [featured, setFeatured] = useState<Product[]>([]);
@@ -17,9 +20,9 @@ export default function Home() {
 
   useEffect(() => {
     Promise.all([
-      productApi.list({ status: '待售', limit: 8 }),
-      brandApi.list(),
-      categoryApi.list(),
+      productApi.list(CN_MARKET, { status: '待售', limit: 8 }),
+      brandApi.list(CN_MARKET),
+      categoryApi.list(CN_MARKET),
     ]).then(([productRes, brandList, categoryList]) => {
       setFeatured(productRes.data);
       setBrands(brandList);
