@@ -158,6 +158,10 @@ export default function ProductDetail() {
       );
       return;
     }
+    if (!product) {
+      showToast('Product not found', 'error');
+      return;
+    }
     setSubmitting(true);
     const currentProduct = product;
     try {
