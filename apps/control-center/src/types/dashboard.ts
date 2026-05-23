@@ -1,7 +1,7 @@
 /**
  * Dashboard types — shared across all control-center components.
  */
-import type { AgentResult, RiskAlert } from "../types.js";
+import type { AgentResult, RiskAlert } from "../../agent-tasks/types.js";
 
 // ─── Data shapes ──────────────────────────────────────────────────────────────
 
