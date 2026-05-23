@@ -6,7 +6,7 @@
 import { useState } from 'react';
 import { useMarket } from '../hooks/useMarket';
 import { useInventory } from '../contexts/InventoryContext';
-import type { InventoryTransactionType, InventoryFormData } from '../types/warehouse';
+import type { InventoryTransactionType } from '../types/warehouse';
 import styles from './Inventory.module.css';
 
 const COPY: Record<string, {
@@ -79,7 +79,7 @@ function formatCurrency(val: number, market: string) {
 
 // ── Inbound Form ───────────────────────────────────────────────────────────────
 function InboundForm({ t, onSuccess }: { t: typeof COPY.CN; onSuccess: () => void }) {
-  const { items, inbound } = useInventory();
+  const { inbound } = useInventory();
   const [form, setForm] = useState({ productName: '', quantity: 1, referenceNo: '', notes: '', operator: '', unitCost: '' });
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);

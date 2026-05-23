@@ -87,32 +87,20 @@ function snowflakeTime(id: string): Date {
 
 // ── Channel message builder ───────────────────────────────────────────────────
 
-interface PostPayload {
-  channelId?: string;
-  content?: string;
-  market?: string;
-}
-
-function productEmbed(payload: PostPayload, taskId: string): unknown {
+function productEmbed(payload: DiscordPostPayload, taskId: string): unknown {
   return {
-    title: `📦 New Listing — ${payload.market ?? ""}`,
-    description: payload.content ?? "",
+    title: `📦 New Listing — ${payload.market}`,
+    description: payload.content,
     color: payload.market === "UK" ? 0x9b59b6 : 0x27ae60,
     footer: { text: `CLOTH Auto Work · ${taskId}` },
     timestamp: new Date().toISOString(),
   };
 }
 
-function escalationEmbed(payload: PostPayload, taskId: string): unknown {
+function escalationEmbed(payload: DiscordPostPayload, taskId: string): unknown {
   return {
     title: `🚨 Escalation Alert`,
-    description: payload.content ?? "",
-    color: 0xe74c3c,
-    footer: { text: `CLOTH Auto Work · ${taskId}` },
-    timestamp: new Date().toISOString(),
-  };
-}
-
+    description: payload.content,
 // ── Public API ───────────────────────────────────────────────────────────────
 
 export interface DiscordExecutorResult {

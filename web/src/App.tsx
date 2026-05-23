@@ -12,6 +12,7 @@ import Admin from './pages/Admin';
 import Support from './pages/Support';
 import Inventory from './pages/Inventory';
 import AdminWarehouse from './pages/AdminWarehouse';
+import Finance from './pages/Finance';
 import { CartProvider } from './hooks/useCart';
 import { ToastProvider } from './hooks/useToast';
 import { MarketProvider } from './hooks/useMarket';
@@ -39,6 +40,7 @@ export default function App() {
                     <Route path="/support" element={<Support />} />
                     <Route path="/inventory" element={<Inventory />} />
                     <Route path="/admin/warehouse" element={<AdminWarehouse />} />
+                    <Route path="/finance" element={<Finance />} />
 
                     {/* ── HK market (/hk) ───────────────────────────────── */}
                     <Route path="/hk" element={<HKHome />} />
@@ -50,6 +52,7 @@ export default function App() {
                     <Route path="/hk/support" element={<Support />} />
                     <Route path="/hk/inventory" element={<Inventory />} />
                     <Route path="/hk/admin/warehouse" element={<AdminWarehouse />} />
+                    <Route path="/hk/finance" element={<Finance />} />
 
                     {/* ── CN market (/cn) ────────────────────────────────── */}
                     <Route path="/cn" element={<Home />} />
@@ -61,6 +64,7 @@ export default function App() {
                     <Route path="/cn/support" element={<Support />} />
                     <Route path="/cn/inventory" element={<Inventory />} />
                     <Route path="/cn/admin/warehouse" element={<AdminWarehouse />} />
+                    <Route path="/cn/finance" element={<Finance />} />
                   </Routes>
                 </main>
                 <Footer />

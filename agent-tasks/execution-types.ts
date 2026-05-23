@@ -1,6 +1,4 @@
 // ── Execution types ────────────────────────────────────────────────────────────
-import type { AgentId } from "./types.js";
-export type { AgentId } from "./types.js";
 
 /** Platform identifier */
 export type ExecutorPlatform =
@@ -59,22 +57,4 @@ export interface ExecutionRunResult {
   durationMs: number;
 }
 
-export interface DiscordPostPayload {
-  channelId: string;
-  content: string;
-  embeds?: unknown[];
-  market: string;
-}
-
-export interface WhatsAppPayload {
-  toGroup?: string;
-  message: string;
-  imageUrl?: string;
-}
-
-export type {
-  ListingTask,
-  ContentTask,
-  SourcingQueueItem,
-  RiskAlert,
-} from "./types.js";
+export { type AgentId } from "./types.js";

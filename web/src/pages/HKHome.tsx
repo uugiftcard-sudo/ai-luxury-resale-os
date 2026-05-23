@@ -61,7 +61,7 @@ export default function HKHome() {
       setFeatured(productRes.data);
       setBrands(brandList);
       setCategories(categoryList);
-    }).catch(console.error).finally(() => setLoading(false));
+    }).catch(() => setLoading(false)).finally(() => setLoading(false));
   }, []);
 
   return (

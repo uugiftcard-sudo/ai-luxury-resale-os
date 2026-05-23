@@ -89,7 +89,7 @@ export default function ProductList() {
         setBrands(b);
         setCategories(c);
       })
-      .catch(console.error);
+      .catch(() => {}); // brands/categories errors handled silently
   }, [market]);
 
   // 加载商品
@@ -106,7 +106,7 @@ export default function ProductList() {
       setProducts(res.data);
       setTotal(res.total);
       setTotalPages(res.totalPages);
-    }).catch(console.error).finally(() => setLoading(false));
+    }).catch(() => setLoading(false)).finally(() => setLoading(false));
   }, [searchParams, market]);
 
   function updateFilter(key: string, value: string) {

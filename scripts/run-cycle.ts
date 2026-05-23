@@ -15,6 +15,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
+import { mkdirSync } from "fs";
 
 // ── Args ──────────────────────────────────────────────────────────────────────
 const args = process.argv.slice(2);
@@ -77,6 +78,23 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, "../packages/db/data");
 
 // ─────────────────────────────────────────────────────────────────────────────
+// TYPES
+// ─────────────────────────────────────────────────────────────────────────────
+interface ScrapedLead {
+  id: string;
+  title: string;
+  askingPrice: { amount: number; currency: string };
+  estimatedResalePrice: { amount: number; currency: string };
+  estimatedShipping: { amount: number; currency: string };
+  estimatedPlatformFeePercent: number;
+  market: "UK" | "HK";
+  channel: string;
+  brandStream: "luxury_resale" | "budget_fashion";
+  riskFlags: string[];
+  evidenceAvailable: string[];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // SCRAPER — runs live web scraping with error isolation
 // ─────────────────────────────────────────────────────────────────────────────
 async function scrapeLeads(marketFilter: string | null): Promise<{
@@ -98,8 +116,34 @@ async function scrapeLeads(marketFilter: string | null): Promise<{
         name: "Depop (UK)",
         fn: async () => {
           try {
-            const { scrapeDepop } = await import("./scrapers/depopScraper.js");
-            return await scrapeDepop();
+            const { searchDepop, scrapeProductDetail } = await import("./scrapers/depopScraper.js");
+            const queries = ["gucci bag sold", "chanel bag sold", "prada bag sold", "louis vuitton bag sold"];
+            const leads: ScrapedLead[] = [];
+            for (const query of queries) {
+              const urls = await searchDepop(query);
+              for (const url of urls.slice(0, 5)) {
+                try {
+                  const p = await scrapeProductDetail(url);
+                  if (!p || p.price <= 0) continue;
+                  const estResale = p.price * 1.4;
+                  leads.push({
+                    id: `depop-${p.id}`,
+                    title: p.title,
+                    askingPrice: { amount: p.price, currency: "GBP" },
+                    estimatedResalePrice: { amount: Math.round(estResale * 100) / 100, currency: "GBP" },
+                    estimatedShipping: { amount: 8, currency: "GBP" },
+                    estimatedPlatformFeePercent: 0.13,
+                    market: "UK",
+                    channel: "depop",
+                    brandStream: "luxury_resale",
+                    riskFlags: [],
+                    evidenceAvailable: ["one photo"],
+                  });
+                } catch { /* skip individual product */ }
+              }
+            }
+            if (leads.length > 0) appendLeadsToStore(leads);
+            return leads.length;
           } catch (e) {
             const msg = `Depop: ${e instanceof Error ? e.message : String(e)}`;
             errors.push(msg);
@@ -112,8 +156,34 @@ async function scrapeLeads(marketFilter: string | null): Promise<{
         name: "Vestiaire (UK)",
         fn: async () => {
           try {
-            const { scrapeVestiaire } = await import("./scrapers/vestiaireScraper.js");
-            return await scrapeVestiaire();
+            const { searchVestiaire, scrapeProductDetail } = await import("./scrapers/vestiaireScraper.js");
+            const queries = ["gucci", "chanel", "prada", "louis vuitton"];
+            const leads: ScrapedLead[] = [];
+            for (const query of queries) {
+              const urls = await searchVestiaire(query);
+              for (const url of urls.slice(0, 5)) {
+                try {
+                  const p = await scrapeProductDetail(url);
+                  if (!p || p.price <= 0) continue;
+                  const estResale = p.price * 1.3;
+                  leads.push({
+                    id: `vestiaire-${p.id}`,
+                    title: p.title,
+                    askingPrice: { amount: p.price, currency: "GBP" },
+                    estimatedResalePrice: { amount: Math.round(estResale * 100) / 100, currency: "GBP" },
+                    estimatedShipping: { amount: 12, currency: "GBP" },
+                    estimatedPlatformFeePercent: 0.09,
+                    market: "UK",
+                    channel: "vestiaire",
+                    brandStream: "luxury_resale",
+                    riskFlags: [],
+                    evidenceAvailable: [],
+                  });
+                } catch { /* skip */ }
+              }
+            }
+            if (leads.length > 0) appendLeadsToStore(leads);
+            return leads.length;
           } catch (e) {
             const msg = `Vestiaire: ${e instanceof Error ? e.message : String(e)}`;
             errors.push(msg);
@@ -130,8 +200,37 @@ async function scrapeLeads(marketFilter: string | null): Promise<{
       name: "Xiaohongshu (HK)",
       fn: async () => {
         try {
-          const { scrapeXiaohongshu } = await import("./scrapers/xiaohongshuScraper.js");
-          return await scrapeXiaohongshu();
+          const { searchXHSNotes } = await import("./scrapers/xiaohongshuScraper.js");
+          const queries = ["Gucci 二手 出售", "Chanel 二手 出售", "Prada 二手 出售", "LV 二手 出售"];
+          const leads: ScrapedLead[] = [];
+          for (const query of queries) {
+            try {
+              const notes = await searchXHSNotes(query);
+              for (const note of notes.slice(0, 8)) {
+                const text = note.title + " " + note.desc;
+                const priceMatch = text.match(/¥\s*(\d+)/) || text.match(/(\d+)\s*元/);
+                if (!priceMatch) continue;
+                const askingPrice = parseInt(priceMatch[1], 10);
+                if (askingPrice < 100) continue;
+                const estResale = askingPrice * 1.3;
+                leads.push({
+                  id: `xhs-${note.noteId}`,
+                  title: note.title,
+                  askingPrice: { amount: askingPrice, currency: "HKD" },
+                  estimatedResalePrice: { amount: Math.round(estResale * 100) / 100, currency: "HKD" },
+                  estimatedShipping: { amount: 35, currency: "HKD" },
+                  estimatedPlatformFeePercent: 0.05,
+                  market: "HK",
+                  channel: "xiaohongshu",
+                  brandStream: "luxury_resale",
+                  riskFlags: [],
+                  evidenceAvailable: note.images.length > 0 ? ["photos"] : [],
+                });
+              }
+            } catch { /* API may be blocked */ }
+          }
+          if (leads.length > 0) appendLeadsToStore(leads);
+          return leads.length;
         } catch (e) {
           const msg = `Xiaohongshu: ${e instanceof Error ? e.message : String(e)}`;
           errors.push(msg);
@@ -156,126 +255,6 @@ async function scrapeLeads(marketFilter: string | null): Promise<{
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SCRAPE API (each scraper exports this)
-// ─────────────────────────────────────────────────────────────────────────────
-interface ScrapedLead {
-  id: string;
-  title: string;
-  askingPrice: { amount: number; currency: string };
-  estimatedResalePrice: { amount: number; currency: string };
-  estimatedShipping: { amount: number; currency: string };
-  estimatedPlatformFeePercent: number;
-  market: "UK" | "HK";
-  channel: string;
-  brandStream: "luxury_resale" | "budget_fashion";
-  riskFlags: string[];
-  evidenceAvailable: string[];
-}
-
-async function scrapeDepop(): Promise<number> {
-  const { searchDepop, scrapeProductDetail } = await import("./scrapers/depopScraper.js");
-  const queries = ["gucci bag sold", "chanel bag sold", "prada bag sold", "louis vuitton bag sold"];
-  const leads: ScrapedLead[] = [];
-
-  for (const query of queries) {
-    const urls = await searchDepop(query);
-    for (const url of urls.slice(0, 5)) {
-      try {
-        const p = await scrapeProductDetail(url);
-        if (!p || p.price <= 0) continue;
-        const estResale = p.price * 1.4; // rough resale estimate
-        const fee = estResale * 0.13;
-        leads.push({
-          id: `depop-${p.id}`,
-          title: p.title,
-          askingPrice: { amount: p.price, currency: "GBP" },
-          estimatedResalePrice: { amount: Math.round(estResale * 100) / 100, currency: "GBP" },
-          estimatedShipping: { amount: 8, currency: "GBP" },
-          estimatedPlatformFeePercent: 0.13,
-          market: "UK",
-          channel: "depop",
-          brandStream: "luxury_resale",
-          riskFlags: [],
-          evidenceAvailable: ["one photo"],
-        });
-      } catch { /* skip failed individual products */ }
-    }
-  }
-
-  if (leads.length > 0) appendLeadsToStore(leads);
-  return leads.length;
-}
-
-async function scrapeVestiaire(): Promise<number> {
-  const { searchVestiaire, scrapeProductDetail } = await import("./scrapers/vestiaireScraper.js");
-  const queries = ["gucci", "chanel", "prada", "louis vuitton"];
-  const leads: ScrapedLead[] = [];
-
-  for (const query of queries) {
-    const urls = await searchVestiaire(query);
-    for (const url of urls.slice(0, 5)) {
-      try {
-        const p = await scrapeProductDetail(url);
-        if (!p || p.price <= 0) continue;
-        const estResale = p.price * 1.3;
-        leads.push({
-          id: `vestiaire-${p.id}`,
-          title: p.title,
-          askingPrice: { amount: p.price, currency: "GBP" },
-          estimatedResalePrice: { amount: Math.round(estResale * 100) / 100, currency: "GBP" },
-          estimatedShipping: { amount: 12, currency: "GBP" },
-          estimatedPlatformFeePercent: 0.09,
-          market: "UK",
-          channel: "vestiaire",
-          brandStream: "luxury_resale",
-          riskFlags: [],
-          evidenceAvailable: [],
-        });
-      } catch { /* skip */ }
-    }
-  }
-
-  if (leads.length > 0) appendLeadsToStore(leads);
-  return leads.length;
-}
-
-async function scrapeXiaohongshu(): Promise<number> {
-  const { searchXHSNotes } = await import("./scrapers/xiaohongshuScraper.js");
-  const queries = ["Gucci 二手 出售", "Chanel 二手 出售", "Prada 二手 出售", "LV 二手 出售"];
-  const leads: ScrapedLead[] = [];
-
-  for (const query of queries) {
-    try {
-      const notes = await searchXHSNotes(query);
-      for (const note of notes.slice(0, 8)) {
-        const text = note.title + " " + note.desc;
-        const priceMatch = text.match(/¥\s*(\d+)/) || text.match(/(\d+)\s*元/);
-        if (!priceMatch) continue;
-        const askingPrice = parseInt(priceMatch[1], 10);
-        if (askingPrice < 100) continue;
-        const estResale = askingPrice * 1.3;
-        leads.push({
-          id: `xhs-${note.noteId}`,
-          title: note.title,
-          askingPrice: { amount: askingPrice, currency: "HKD" },
-          estimatedResalePrice: { amount: Math.round(estResale * 100) / 100, currency: "HKD" },
-          estimatedShipping: { amount: 35, currency: "HKD" },
-          estimatedPlatformFeePercent: 0.05,
-          market: "HK",
-          channel: "xiaohongshu",
-          brandStream: "luxury_resale",
-          riskFlags: [],
-          evidenceAvailable: note.images.length > 0 ? ["photos"] : [],
-        });
-      }
-    } catch { /* API may be blocked */ }
-  }
-
-  if (leads.length > 0) appendLeadsToStore(leads);
-  return leads.length;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // STORE — append scraped leads to the real db store
 // ─────────────────────────────────────────────────────────────────────────────
 function appendLeadsToStore(newLeads: ScrapedLead[]): void {
@@ -296,7 +275,7 @@ function appendLeadsToStore(newLeads: ScrapedLead[]): void {
 }
 
 function ensureDataDir(): void {
-  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+  if (!fs.existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

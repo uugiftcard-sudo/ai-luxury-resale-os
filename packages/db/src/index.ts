@@ -418,3 +418,25 @@ export {
   clearAll,
   dataSummary
 } from "./storage.js";
+
+// Re-export typed env config + validation
+export {
+  shopifyConfig,
+  shopifyConfigFor,
+  tiktokConfig,
+  whatsappConfig,
+  discordConfig,
+  ebayConfig,
+  openaiConfig,
+  envSummary,
+  validateEnv,
+} from "./env.js";
+export type {
+  ShopifyConfig,
+  ShopifyStoreConfig,
+  TikTokConfig,
+  WhatsAppConfig,
+  DiscordConfig,
+  EbayConfig,
+  EnvSummary,
+} from "./env.js";

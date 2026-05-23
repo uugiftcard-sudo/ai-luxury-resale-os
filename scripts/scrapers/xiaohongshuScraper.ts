@@ -189,7 +189,7 @@ function toClothFormat(note: XHSNote): ClothProduct {
  * 搜索小红书笔记
  * 注意: 这是一个模拟函数，实际需要使用 Playwright 或 MCP 工具
  */
-async function searchXHSNotes(query: string): Promise<XHSNote[]> {
+export async function searchXHSNotes(query: string): Promise<XHSNote[]> {
   console.log(`📡 搜索小红书: "${query}"`);
 
   // 小红书有严格的反爬，以下为概念性实现
@@ -266,27 +266,3 @@ async function main() {
 }
 
 main().catch(console.error);
-
-/**
- * Named export for CLI / run-cycle.ts
- */
-export async function scrapeXiaohongshu(): Promise<number> {
-  const queries = [
-    'Gucci 二手 出售', 'Chanel 二手 出售',
-    'Prada 二手 出售', 'LV 二手 出售',
-  ];
-  let total = 0;
-  for (const query of queries) {
-    const notes = await searchXHSNotes(query);
-    for (const note of notes) {
-      const priceMatch = (note.title + ' ' + note.desc).match(/¥\s*(\d+)|(\d+)\s*元/);
-      if (priceMatch) {
-        const price = parseInt((priceMatch[1] || priceMatch[2]), 10);
-        if (price > 100) total++;
-      }
-    }
-  }
-  return total;
-}
-
-export { searchXHSNotes };

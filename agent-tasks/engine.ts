@@ -34,16 +34,6 @@ import {
   executeShopifyListing,
 } from "./listing-executor.js";
 
-const DIM = "\x1b[2m";
-function c(color: string, text: string): string {
-  return `${color}${text}\x1b[0m`;
-}
-
-// ── Approval store (in-memory; swap for DB in production) ─────────────────────
-
-interface ApprovalRecord {
-  taskId: string;
-  approvedAt: string;
   approvedBy: string;
 }
 

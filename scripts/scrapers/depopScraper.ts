@@ -47,7 +47,7 @@ const SEARCH_QUERIES = ['gucci bag', 'chanel bag', 'prada bag', 'louis vuitton']
 /**
  * 从 Depop 商品页抓取详情
  */
-async function scrapeProductDetail(url: string): Promise<DepopProduct | null> {
+export async function scrapeProductDetail(url: string): Promise<DepopProduct | null> {
   try {
     const { data } = await axios.get(url, {
       headers: {
@@ -100,7 +100,7 @@ async function scrapeProductDetail(url: string): Promise<DepopProduct | null> {
 /**
  * 搜索 Depop 商品列表
  */
-async function searchDepop(query: string): Promise<string[]> {
+export async function searchDepop(query: string): Promise<string[]> {
   try {
     const searchUrl = `${DEPOP_BASE_URL}/search/?q=${encodeURIComponent(query)}`;
     const { data } = await axios.get(searchUrl, {
@@ -212,23 +212,3 @@ async function main() {
 }
 
 main().catch(console.error);
-
-/**
- * Named export for CLI / run-cycle.ts
- */
-export async function scrapeDepop(): Promise<number> {
-  const queries = ['gucci bag sold', 'chanel bag sold', 'prada bag sold', 'louis vuitton bag sold'];
-  let total = 0;
-  for (const query of queries) {
-    const urls = await searchDepop(query);
-    for (const url of urls.slice(0, 5)) {
-      try {
-        const p = await scrapeProductDetail(url);
-        if (p && p.price > 0) total++;
-      } catch { /* skip failed individual products */ }
-    }
-  }
-  return total;
-}
-
-export { searchDepop, scrapeProductDetail };

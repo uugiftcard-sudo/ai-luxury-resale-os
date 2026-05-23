@@ -18,6 +18,7 @@ let _supabase: ReturnType<typeof createClient> | null = null;
 
 function createClient(url: string, key: string) {
   // Lazy-load so the bundle doesn't crash when @supabase/supabase-js is not configured
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { createClient: factory } = require('@supabase/supabase-js');
   return factory(url, key);
 }

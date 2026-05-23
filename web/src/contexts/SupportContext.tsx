@@ -34,7 +34,7 @@ export function SupportProvider({ children }: { children: React.ReactNode }) {
     try {
       const data = await supportApi.list();
       setTickets(data);
-    } catch (e) {
+    } catch {
       setError('加载客服记录失败，请刷新重试。');
     } finally {
       setLoading(false);

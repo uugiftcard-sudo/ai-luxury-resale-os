@@ -14,10 +14,6 @@ import type {
   ContentTask,
   SourcingQueueItem,
   RiskAlert,
-  DiscordPostPayload,
-  WhatsAppPayload,
-} from "./execution-types.js";
-
 let _taskSeq = 0;
 function makeId(prefix: string): string {
   return `${prefix}-${Date.now()}-${++_taskSeq}`;
@@ -70,8 +66,8 @@ export function fromListingTask(
         `[Shopify] Publish listing for ${listing.product.sku} (${listing.priority})`,
         "shopify",
         { listingTask: listing, shopifyPayload },
-        risk === "high",
-        risk === "high"
+        "shopify",
+        { listingTask: listing, shopifyPayload },
           ? "Luxury item listing — founder approval required"
           : undefined
       )
@@ -96,6 +92,19 @@ export function fromListingTask(
 
 // ── Content tasks ────────────────────────────────────────────────────────────────
 
+// ── Content tasks ────────────────────────────────────────────────────────────────
+
+export interface DiscordPostPayload {
+  channelId: string;
+  content: string;
+  embeds?: unknown[];
+  market: string;
+}
+
+export interface WhatsAppPayload {
+  toGroup: string;
+  message: string;
+  imageUrl?: string;
 export function fromContentTask(
   content: ContentTask,
   captionsByPlatform: Record<string, string[]>,
@@ -143,6 +152,7 @@ export function fromContentTask(
         message: `🆕 新貨預覽 / New Drop\n\n` +
           `📦 SKU: ${content.product.sku}\n` +
           `${captions[0] ?? ""}`,
+          `📦 SKU: ${content.product.sku}\n` +
       } satisfies WhatsAppPayload,
       true,
       "WhatsApp broadcast to VIP group — founder confirmation required"

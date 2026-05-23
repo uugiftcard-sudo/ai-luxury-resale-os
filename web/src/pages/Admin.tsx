@@ -104,7 +104,7 @@ export default function Admin() {
     setProductsLoading(true);
     productApi.list(market, { limit: 100 })
       .then(res => setProducts(res.data))
-      .catch(console.error)
+      .catch(() => {}) // error handling via UI
       .finally(() => setProductsLoading(false));
   }
 
@@ -112,7 +112,7 @@ export default function Admin() {
     setOrdersLoading(true);
     orderApi.list(market)
       .then(r => setOrders(r.data))
-      .catch(console.error)
+      .catch(() => {}) // error handling via UI
       .finally(() => setOrdersLoading(false));
   }
 

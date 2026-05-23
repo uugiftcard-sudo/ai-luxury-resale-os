@@ -26,7 +26,7 @@ export default function Orders() {
   useEffect(() => {
     orderApi.list(market, filterStatus || undefined)
       .then(res => setOrders(res.data))
-      .catch(console.error)
+      .catch(() => {}) // error handled silently
       .finally(() => setLoading(false));
   }, [filterStatus, market]);
 

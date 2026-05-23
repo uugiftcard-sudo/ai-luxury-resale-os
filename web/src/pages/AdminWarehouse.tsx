@@ -11,7 +11,7 @@ import styles from './AdminWarehouse.module.css';
 const ADMIN_PASSWORD = 'cloth-admin-2026';
 
 export default function AdminWarehouse() {
-  const { items, transactions, stats, loading, refreshAll, createItem, updateItem, inbound, outbound } = useInventory();
+  const { items, transactions, stats, createItem, updateItem, inbound, outbound } = useInventory();
   const [authenticated, setAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');

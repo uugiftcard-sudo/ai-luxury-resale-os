@@ -170,7 +170,7 @@ export interface StoreData {
   proofPacks: ProofPack[];
   sourcingLeads: SourcingLead[];
   orders: Array<{ orderId: string; sku: string; status: string; market: Market }>;
-  source: "api" | "sample" | "sample+scraped";
+  source: "api" | "sample";
 }
 
 export async function fetchStoreData(market?: Market): Promise<StoreData> {

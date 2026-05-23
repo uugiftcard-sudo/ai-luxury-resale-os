@@ -111,7 +111,7 @@ export async function executeEbayListing(
 
   try {
     const token = await getEbayAccessToken(config);
-    const body = payload.ebayPayload as unknown as EbayListingPayload;
+    const body = payload.ebayPayload as EbayListingPayload;
 
     const res = await fetch(
       "https://api.ebay.com/sell/inventory/v1/offer",

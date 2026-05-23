@@ -43,9 +43,7 @@ async function request<T>(
 
     return data as ApiResponse<T>;
   } catch (err) {
-    if (err instanceof Error) {
-      throw err;
-    }
+    if (err instanceof Error) { throw Object.assign(err, { _original: err }); }
     throw new Error('网络请求失败，请检查网络连接');
   }
 }

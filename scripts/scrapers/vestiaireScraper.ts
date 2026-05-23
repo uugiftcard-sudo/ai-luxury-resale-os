@@ -54,7 +54,7 @@ const _CONDITION_MAP: Record<string, string> = {
 /**
  * 抓取 Vestiaire 商品详情
  */
-async function scrapeProductDetail(url: string): Promise<VestiaireProduct | null> {
+export async function scrapeProductDetail(url: string): Promise<VestiaireProduct | null> {
   try {
     const { data } = await axios.get(url, {
       headers: {
@@ -104,7 +104,7 @@ async function scrapeProductDetail(url: string): Promise<VestiaireProduct | null
 /**
  * 搜索 Vestiaire 商品
  */
-async function searchVestiaire(query: string): Promise<string[]> {
+export async function searchVestiaire(query: string): Promise<string[]> {
   try {
     const searchUrl = `${VESTIAIRE_BASE_URL}/search/${encodeURIComponent(query)}-sold-1.html`;
     const { data } = await axios.get(searchUrl, {
@@ -192,23 +192,3 @@ async function main() {
 }
 
 main().catch(console.error);
-
-/**
- * Named export for CLI / run-cycle.ts
- */
-export async function scrapeVestiaire(): Promise<number> {
-  const queries = ['gucci', 'chanel', 'prada', 'louis vuitton'];
-  let total = 0;
-  for (const query of queries) {
-    const urls = await searchVestiaire(query);
-    for (const url of urls.slice(0, 5)) {
-      try {
-        const p = await scrapeProductDetail(url);
-        if (p && p.price > 0) total++;
-      } catch { /* skip */ }
-    }
-  }
-  return total;
-}
-
-export { searchVestiaire, scrapeProductDetail };

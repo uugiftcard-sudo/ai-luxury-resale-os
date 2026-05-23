@@ -19,7 +19,8 @@
  *
  * In mock mode, messages are logged to console only.
  */
-import type { ExecutionTask, ExecutionResult, WhatsAppPayload } from "./execution-types.js";
+import type { ExecutionTask, ExecutionResult } from "./execution-types.js";
+import type { WhatsAppPayload } from "./task-factory.js";
 
 interface WhatsAppConfig {
   accessToken: string;
@@ -86,7 +87,7 @@ export async function executeWhatsAppTask(
   const isMock = !config.accessToken;
 
   const payload = task.payload as Partial<WhatsAppPayload>;
-  const market = task.market;
+  const market = payload.market ?? task.market;
   const recipient =
     payload.toGroup ?? config.vipGroups[market] ?? "";
 

@@ -210,6 +210,50 @@ export interface InventoryFormData {
   notes?: string;
 }
 
+// ==================== 财务系统 ====================
+export type FinanceType = '收入' | '支出';
+
+export type FinanceCategory =
+  | '商品销售收入'
+  | '其他收入'
+  | '商品采购'
+  | '物流运输'
+  | '平台费用'
+  | '仓储费用'
+  | '营销推广'
+  | '人力成本'
+  | '税费'
+  | '其他支出';
+
+export interface FinanceRecord {
+  id: string;
+  type: FinanceType;
+  category: FinanceCategory;
+  amount: number;
+  description: string;
+  date: string;
+  relatedOrderId?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface FinanceRecordFormData {
+  type: FinanceType;
+  category: FinanceCategory;
+  amount: string;
+  description: string;
+  date: string;
+  relatedOrderId?: string;
+}
+
+export interface FinanceStats {
+  totalIncome: number;
+  totalExpense: number;
+  netProfit: number;
+  incomeCount: number;
+  expenseCount: number;
+}
+
 export interface InventoryStats {
   totalSKUs: number;
   totalStock: number;

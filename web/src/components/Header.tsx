@@ -37,7 +37,7 @@ const CATEGORY_LINKS: Record<Market, { label: string; param: string }[]> = {
     { label: '鞋履',     param: '鞋履' },
   ],
 };
-const NAV_COPY: Record<Market, { orders: string; admin: string; search: string; cart: string; support: string; inventory: string }> = {
+const NAV_COPY: Record<Market, { orders: string; admin: string; search: string; cart: string; support: string; inventory: string; finance: string }> = {
   UK: {
     orders: 'My Orders',
     admin: 'Admin',
@@ -45,6 +45,7 @@ const NAV_COPY: Record<Market, { orders: string; admin: string; search: string; 
     cart: 'Cart',
     support: 'Support',
     inventory: 'Warehouse',
+    finance: 'Finance',
   },
   HK: {
     orders: '我的訂單',
@@ -53,6 +54,7 @@ const NAV_COPY: Record<Market, { orders: string; admin: string; search: string; 
     cart: '購物車',
     support: '客服',
     inventory: '倉庫',
+    finance: '財務',
   },
   CN: {
     orders: '我的订单',
@@ -61,6 +63,7 @@ const NAV_COPY: Record<Market, { orders: string; admin: string; search: string; 
     cart: '购物车',
     support: '客服',
     inventory: '仓库',
+    finance: '财务',
   },
 };
 
@@ -216,6 +219,7 @@ export default function Header() {
           <Link to="/orders" onClick={() => setMenuOpen(false)}>{t.orders}</Link>
           <Link to="/support" onClick={() => setMenuOpen(false)}>{t.support}</Link>
           <Link to="/inventory" onClick={() => setMenuOpen(false)}>{t.inventory}</Link>
+          <Link to="/finance" onClick={() => setMenuOpen(false)}>{t.finance}</Link>
           <Link to="/admin" onClick={() => setMenuOpen(false)} className={styles.adminLink}>{t.admin}</Link>
         </nav>
 
