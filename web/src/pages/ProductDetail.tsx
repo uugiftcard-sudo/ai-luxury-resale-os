@@ -75,7 +75,7 @@ export default function ProductDetail() {
   const navigate = useNavigate();
   const { addItem, isInCart } = useCart();
   const { showToast } = useToast();
-  const { market, config } = useMarket();
+  const { market } = useMarket();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);

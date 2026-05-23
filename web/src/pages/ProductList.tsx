@@ -1,18 +1,70 @@
 /**
  * 商品列表页
  * 支持筛选（品牌/分类/价格/成色）和分页
+ * All API calls include the active market so prices are currency-correct.
  */
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import { productApi, brandApi, categoryApi } from '../api/client';
+import { useMarket } from '../hooks/useMarket';
 import type { Product, Brand, Category, ProductCondition } from '../types';
 import styles from './ProductList.module.css';
 
 const CONDITIONS: ProductCondition[] = ['全新', '几乎全新', '轻微使用痕迹', '有明显使用痕迹'];
 
+// ── UI copy per market ───────────────────────────────────────────────────────
+const COPY: Record<string, Record<string, string>> = {
+  CN: {
+    title: '全部商品',
+    filter: '筛选',
+    closeFilter: '收起筛选',
+    clearFilter: '清除全部筛选',
+    brand: '品牌',
+    category: '分类',
+    condition: '成色',
+    noResults: '暂无符合条件的商品',
+    tryAdjust: '试试调整筛选条件',
+    page: '第 {page} / {total} 页，共 {total} 件',
+    prev: '上一页',
+    next: '下一页',
+    items: '件商品',
+  },
+  HK: {
+    title: '全部商品',
+    filter: '篩選',
+    closeFilter: '收起篩選',
+    clearFilter: '清除全部篩選',
+    brand: '品牌',
+    category: '分類',
+    condition: '成色',
+    noResults: '暫無符合條件的商品',
+    tryAdjust: '試試調整篩選條件',
+    page: '第 {page} / {total} 頁，共 {total} 件',
+    prev: '上一頁',
+    next: '下一頁',
+    items: '件商品',
+  },
+  UK: {
+    title: 'All Products',
+    filter: 'Filter',
+    closeFilter: 'Close Filters',
+    clearFilter: 'Clear All',
+    brand: 'Brand',
+    category: 'Category',
+    condition: 'Condition',
+    noResults: 'No items match your filters',
+    tryAdjust: 'Try adjusting your filters',
+    page: 'Page {page} of {total} — {total} items',
+    prev: '← Prev',
+    next: 'Next →',
+    items: 'items',
+  },
+};
+
 export default function ProductList() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { market } = useMarket();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -22,27 +74,28 @@ export default function ProductList() {
   const [totalPages, setTotalPages] = useState(1);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  // 从 URL 提取筛选参数
   const currentBrand = searchParams.get('brand') || '';
   const currentCategory = searchParams.get('category') || '';
   const currentCondition = searchParams.get('condition') as ProductCondition || '';
   const currentSearch = searchParams.get('search') || '';
   const currentPage = Number(searchParams.get('page') || '1');
 
+  const t = COPY[market] ?? COPY.CN;
+
   // 加载品牌和分类
   useEffect(() => {
-    Promise.all([brandApi.list(), categoryApi.list()])
+    Promise.all([brandApi.list(market), categoryApi.list(market)])
       .then(([b, c]) => {
         setBrands(b);
         setCategories(c);
       })
       .catch(console.error);
-  }, []);
+  }, [market]);
 
   // 加载商品
   useEffect(() => {
     setLoading(true);
-    productApi.list({
+    productApi.list(market, {
       brand: currentBrand,
       category: currentCategory,
       condition: currentCondition || undefined,
@@ -54,9 +107,8 @@ export default function ProductList() {
       setTotal(res.total);
       setTotalPages(res.totalPages);
     }).catch(console.error).finally(() => setLoading(false));
-  }, [searchParams]);
+  }, [searchParams, market]);
 
-  // 更新 URL 筛选参数
   function updateFilter(key: string, value: string) {
     const next = new URLSearchParams(searchParams);
     if (value) {
@@ -64,7 +116,7 @@ export default function ProductList() {
     } else {
       next.delete(key);
     }
-    next.delete('page'); // 重置到第一页
+    next.delete('page');
     setSearchParams(next);
   }
 
@@ -72,7 +124,12 @@ export default function ProductList() {
     setSearchParams({});
   }
 
-  const hasFilters = currentBrand || currentCategory || currentCondition || currentSearch;
+  const hasFilters = !!(currentBrand || currentCategory || currentCondition || currentSearch);
+
+  const pageLabel = t.page
+    .replace('{page}', String(currentPage))
+    .replace('{total}', String(totalPages))
+    .replace(/{total}/g, String(total));
 
   return (
     <div className="page">
@@ -82,20 +139,20 @@ export default function ProductList() {
           <div>
             <h1>
               {currentSearch
-                ? `搜索: ${currentSearch}`
+                ? (market === 'UK' ? `Search: ${currentSearch}` : `搜索: ${currentSearch}`)
                 : currentCategory
                   ? currentCategory
                   : currentBrand
                     ? currentBrand
-                    : '全部商品'}
+                    : t.title}
             </h1>
-            <p>{total} 件商品</p>
+            <p>{total} {t.items}</p>
           </div>
           <button
             className={`btn btn-secondary ${styles.filterToggle}`}
             onClick={() => setFiltersOpen(!filtersOpen)}
           >
-            {filtersOpen ? '收起筛选' : '筛选'}
+            {filtersOpen ? t.closeFilter : t.filter}
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
             </svg>
@@ -105,7 +162,7 @@ export default function ProductList() {
         {/* 筛选栏 */}
         <div className={`${styles.filterBar} ${filtersOpen ? styles.filterBarOpen : ''}`}>
           <div className={styles.filterSection}>
-            <label className={styles.filterLabel}>品牌</label>
+            <label className={styles.filterLabel}>{t.brand}</label>
             <div className={styles.filterChips}>
               {brands.map(b => (
                 <button
@@ -120,7 +177,7 @@ export default function ProductList() {
           </div>
 
           <div className={styles.filterSection}>
-            <label className={styles.filterLabel}>分类</label>
+            <label className={styles.filterLabel}>{t.category}</label>
             <div className={styles.filterChips}>
               {categories.map(c => (
                 <button
@@ -135,7 +192,7 @@ export default function ProductList() {
           </div>
 
           <div className={styles.filterSection}>
-            <label className={styles.filterLabel}>成色</label>
+            <label className={styles.filterLabel}>{t.condition}</label>
             <div className={styles.filterChips}>
               {CONDITIONS.map(c => (
                 <button
@@ -151,7 +208,7 @@ export default function ProductList() {
 
           {hasFilters && (
             <button className="btn btn-ghost btn-sm" onClick={clearFilters}>
-              清除全部筛选
+              {t.clearFilter}
             </button>
           )}
         </div>
@@ -169,9 +226,9 @@ export default function ProductList() {
           </div>
         ) : products.length === 0 ? (
           <div className="empty-state">
-            <h3>暂无符合条件的商品</h3>
-            <p>试试调整筛选条件</p>
-            <button className="btn btn-primary" onClick={clearFilters}>清除筛选</button>
+            <h3>{t.noResults}</h3>
+            <p>{t.tryAdjust}</p>
+            <button className="btn btn-primary" onClick={clearFilters}>{t.clearFilter}</button>
           </div>
         ) : (
           <>
@@ -181,7 +238,6 @@ export default function ProductList() {
               ))}
             </div>
 
-            {/* 分页 */}
             {totalPages > 1 && (
               <div className={styles.pagination}>
                 <button
@@ -189,17 +245,15 @@ export default function ProductList() {
                   onClick={() => updateFilter('page', String(currentPage - 1))}
                   disabled={currentPage <= 1}
                 >
-                  ← 上一页
+                  {t.prev}
                 </button>
-                <span className={styles.pageInfo}>
-                  第 {currentPage} / {totalPages} 页，共 {total} 件
-                </span>
+                <span className={styles.pageInfo}>{pageLabel}</span>
                 <button
                   className={`btn btn-secondary btn-sm ${currentPage >= totalPages ? styles.disabled : ''}`}
                   onClick={() => updateFilter('page', String(currentPage + 1))}
                   disabled={currentPage >= totalPages}
                 >
-                  下一页 →
+                  {t.next}
                 </button>
               </div>
             )}

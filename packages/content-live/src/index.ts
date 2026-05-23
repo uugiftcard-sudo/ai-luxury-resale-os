@@ -7,7 +7,7 @@
  *
  * Status: STUB — implement AI-powered content generation.
  */
-import type { Product, ContentAsset, Market, Language } from "@luxury/db";
+import type { Product, ContentAsset } from "@luxury/db";
 
 export interface ContentPack {
   hooks: string[];

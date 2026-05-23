@@ -41,6 +41,7 @@ const VESTIAIRE_BASE_URL = 'https://www.vestiairecollective.com';
 const SEARCH_QUERIES = ['gucci', 'chanel', 'prada', 'louis vuitton', 'hermes'];
 
 // Vestiaire 成色映射 (保留用于未来实现)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const _CONDITION_MAP: Record<string, string> = {
   'never_used': '全新',
   'very_good': '几乎全新',
