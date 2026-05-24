@@ -1,6 +1,7 @@
 /**
  * Header 组件
  * 全局顶部导航栏 — includes market selector dropdown.
+ * Mobile: hamburger drawer + mobile search bar.
  */
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
@@ -8,6 +9,7 @@ import { useCart } from '../hooks/useCart';
 import { useMarket } from '../hooks/useMarket';
 import type { Market } from '../types/market';
 import styles from './Header.module.css';
+import { useWishlist } from '../hooks/useWishlist';
 
 // ── Market flag + label config ───────────────────────────────────────────────
 const MARKET_OPTIONS: { value: Market; flag: string; label: string; url: string }[] = [
@@ -70,9 +72,11 @@ const NAV_COPY: Record<Market, { orders: string; admin: string; search: string; 
 export default function Header() {
   const { totalItems } = useCart();
   const { market, setMarket } = useMarket();
+  const { count: wishlistCount } = useWishlist();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
+  const [mobileSearchValue, setMobileSearchValue] = useState('');
   const [marketOpen, setMarketOpen] = useState(false);
   const marketRef = useRef<HTMLDivElement>(null);
 
@@ -103,6 +107,15 @@ export default function Header() {
     if (searchValue.trim()) {
       navigate(`/products?search=${encodeURIComponent(searchValue.trim())}`);
       setSearchValue('');
+      setMenuOpen(false);
+    }
+  }
+
+  function handleMobileSearch(e: React.FormEvent) {
+    e.preventDefault();
+    if (mobileSearchValue.trim()) {
+      navigate(`/products?search=${encodeURIComponent(mobileSearchValue.trim())}`);
+      setMobileSearchValue('');
       setMenuOpen(false);
     }
   }
@@ -206,7 +219,11 @@ export default function Header() {
         </form>
 
         {/* ── Nav ────────────────────────────────────────────────────── */}
-        <nav className={`${styles.nav} ${menuOpen ? styles.navOpen : ''}`} id="mobile-nav" aria-label="Main navigation">
+        <nav
+          className={`${styles.nav} ${menuOpen ? styles.navOpen : ''}`}
+          id="mobile-nav"
+          aria-label="Main navigation"
+        >
           {CATEGORY_LINKS[market].map(cat => (
             <Link
               key={cat.label}
@@ -217,14 +234,48 @@ export default function Header() {
             </Link>
           ))}
           <Link to="/orders" onClick={() => setMenuOpen(false)}>{t.orders}</Link>
+          <Link to="/wishlist" onClick={() => setMenuOpen(false)}>
+            {market === 'UK' ? 'Wishlist' : market === 'HK' ? '心願清單' : '心愿单'}
+            {wishlistCount > 0 && <span style={{ marginLeft: 6, background: 'var(--color-accent)', color: '#fff', borderRadius: 10, padding: '1px 8px', fontSize: '0.72rem', fontWeight: 700 }}>{wishlistCount}</span>}
+          </Link>
           <Link to="/support" onClick={() => setMenuOpen(false)}>{t.support}</Link>
           <Link to="/inventory" onClick={() => setMenuOpen(false)}>{t.inventory}</Link>
           <Link to="/finance" onClick={() => setMenuOpen(false)}>{t.finance}</Link>
           <Link to="/admin" onClick={() => setMenuOpen(false)} className={styles.adminLink}>{t.admin}</Link>
         </nav>
 
-        {/* ── Cart + Menu ───────────────────────────────────────────── */}
+        {/* ── Mobile Search Bar ─────────────────────────────────────── */}
+        <div className={styles.mobileSearch}>
+          <form onSubmit={handleMobileSearch} className={styles.mobileSearchForm}>
+            <input
+              type="text"
+              placeholder={t.search}
+              value={mobileSearchValue}
+              onChange={e => setMobileSearchValue(e.target.value)}
+              className={styles.mobileSearchInput}
+              aria-label={t.search}
+            />
+            <button type="submit" className={styles.mobileSearchBtn} aria-label="搜索">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+              </svg>
+            </button>
+          </form>
+        </div>
+
+        {/* ── Cart + Wishlist + Menu ─────────────────────────────────── */}
         <div className={styles.actions}>
+          {/* Wishlist */}
+          <Link to="/wishlist" className={styles.wishlistBtn} aria-label="Wishlist">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill={wishlistCount > 0 ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
+            {wishlistCount > 0 && (
+              <span className={styles.wishlistBadge}>{wishlistCount}</span>
+            )}
+          </Link>
+
+          {/* Cart */}
           <Link to="/cart" className={styles.cartBtn} aria-label={t.cart}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
               <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
@@ -236,6 +287,7 @@ export default function Header() {
             )}
           </Link>
 
+          {/* Hamburger */}
           <button
             className={`${styles.menuBtn} ${menuOpen ? styles.menuOpen : ''}`}
             onClick={() => setMenuOpen(o => !o)}

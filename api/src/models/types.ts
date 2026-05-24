@@ -103,3 +103,62 @@ export interface ProductFilter {
   page?: number;
   limit?: number;
 }
+
+// 财务类型
+export type FinanceType = '收入' | '支出';
+
+export type FinanceCategory =
+  | '商品销售收入'
+  | '其他收入'
+  | '商品采购'
+  | '物流运输'
+  | '平台费用'
+  | '仓储费用'
+  | '营销推广'
+  | '人力成本'
+  | '税费'
+  | '其他支出';
+
+// 财务记录接口
+export interface FinanceRecord {
+  id: string;
+  type: FinanceType;
+  category: FinanceCategory;
+  amount: number;
+  description: string;
+  date: string;
+  market?: string;
+  relatedOrderId?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+// AI 虛擬主播帶貨任務
+export type LiveAccountStyle = 'educational' | 'luxury_editor' | 'deal_hunter' | 'community_host';
+
+export interface LiveSellingPlan {
+  planId: string;
+  productId?: string;
+  productTitle: string;
+  accountStyle: LiveAccountStyle;
+  hook: string;
+  script: string;
+  interactionPrompts: string[];
+  cta: string;
+  inventoryCheck: {
+    sku?: string;
+    status: 'ready' | 'low_stock' | 'out_of_stock' | 'unknown';
+    message: string;
+  };
+  financeCheck: {
+    expectedRevenue: number;
+    estimatedPlatformFee: number;
+    estimatedAdCost: number;
+    estimatedInventoryCost: number;
+    estimatedRefundReserve: number;
+    estimatedNetProfit: number;
+  };
+  supportNotes: string[];
+  safetyNote: string;
+  createdAt: string;
+}

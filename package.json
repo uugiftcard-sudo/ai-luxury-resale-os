@@ -12,6 +12,8 @@
   "scripts": {
     "dev": "concurrently \"npm run dev --workspace=api\" \"npm run dev --workspace=web\"",
     "build": "npm run build --workspace=api && npm run build --workspace=web",
+    "lint": "eslint api/src web/src --max-warnings=20",
+    "check": "npm run build",
     "start": "npm run start --workspace=api",
     "agent:run": "node_modules/.bin/tsx scripts/run-cycle.ts"
   },

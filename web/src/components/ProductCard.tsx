@@ -1,11 +1,13 @@
 /**
  * ProductCard 组件
  * 商品卡片展示 — prices automatically formatted to the active market's currency.
+ * Includes wishlist heart toggle.
  */
 import { Link } from 'react-router-dom';
 import type { Product } from '../types';
 import { useMarket } from '../hooks/useMarket';
 import { displayPrice } from '../api/client';
+import { useWishlist } from '../hooks/useWishlist';
 import styles from './ProductCard.module.css';
 
 interface Props {
@@ -36,7 +38,9 @@ function discountRate(original: number, current: number): number {
 
 export default function ProductCard({ product, forceMarket }: Props) {
   const { market, config } = useMarket();
+  const { isWishlisted, toggle } = useWishlist();
   const activeMarket = forceMarket as typeof market | undefined ?? market;
+  const wishlisted = isWishlisted(product.id);
 
   const discount = discountRate(product.originalPrice, product.price);
   const mainImage = product.images[0] ||
@@ -53,12 +57,9 @@ export default function ProductCard({ product, forceMarket }: Props) {
       : product.condition;
 
   return (
-    <Link
-      to={`/products/${product.id}`}
-      className={styles.card}
-    >
+    <div className={styles.card}>
       {/* 图片 */}
-      <div className={styles.imageWrap}>
+      <Link to={`/products/${product.id}`} className={styles.imageWrap}>
         <img
           src={mainImage}
           alt={product.title}
@@ -78,7 +79,26 @@ export default function ProductCard({ product, forceMarket }: Props) {
             {product.status}
           </span>
         )}
-      </div>
+      </Link>
+
+      {/* Wishlist heart — outside Link so <a> nesting is valid */}
+      <button
+        className={`${styles.heartBtn} ${wishlisted ? styles.heartActive : ''}`}
+        onClick={e => { e.preventDefault(); e.stopPropagation(); toggle(product.id); }}
+        aria-label={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+        title={wishlisted ? 'Remove from wishlist' : 'Save to wishlist'}
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill={wishlisted ? 'currentColor' : 'none'}
+          stroke="currentColor"
+          strokeWidth="1.5"
+        >
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+        </svg>
+      </button>
 
       {/* 信息 */}
       <div className={styles.info}>
@@ -110,6 +130,6 @@ export default function ProductCard({ product, forceMarket }: Props) {
           )}
         </div>
       </div>
-    </Link>
+    </div>
   );
 }

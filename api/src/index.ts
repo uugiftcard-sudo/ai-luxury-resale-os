@@ -8,6 +8,10 @@ import productsRouter from './routes/products';
 import ordersRouter from './routes/orders';
 import brandsRouter from './routes/brands';
 import categoriesRouter from './routes/categories';
+import financeRouter from './routes/finance';
+import inventoryRouter from './routes/inventory';
+import supportRouter from './routes/support';
+import liveRouter from './routes/live';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -32,6 +36,10 @@ app.use('/api/products', productsRouter);
 app.use('/api/orders', ordersRouter);
 app.use('/api/brands', brandsRouter);
 app.use('/api/categories', categoriesRouter);
+app.use('/api/finance', financeRouter);
+app.use('/api/inventory', inventoryRouter);
+app.use('/api/support', supportRouter);
+app.use('/api/live', liveRouter);
 
 // 健康检查
 app.get('/api/health', (_req, res) => {
