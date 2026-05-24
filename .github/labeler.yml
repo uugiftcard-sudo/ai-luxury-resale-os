@@ -3,14 +3,14 @@
 
 # --- Type labels ---
 feat:
-  - head-branch: ['feat/**', 'feature/**']
+  - head-branch: ['feat/.*', 'feature/.*']
   - any: ['src/**/*.{ts,tsx,js,jsx}']
 
 fix:
-  - head-branch: ['fix/**', 'hotfix/**', 'bugfix/**']
+  - head-branch: ['fix/.*', 'hotfix/.*', 'bugfix/.*']
 
 chore:
-  - head-branch: ['chore/**', 'deps/**', 'dependabot/**', 'renovate/**']
+  - head-branch: ['chore/.*', 'deps/.*', 'dependabot/.*', 'renovate/.*']
 
 docs:
   - any: ['**/*.md', 'docs/**']
@@ -19,7 +19,7 @@ ci:
   - any: ['.github/**', '**/*.yml', '**/*.yaml']
 
 refactor:
-  - head-branch: ['refactor/**', 'refactor/**']
+  - head-branch: ['refactor/.*', 'refactor/.*']
 
 # --- Scope labels ---
 'area/backend':
