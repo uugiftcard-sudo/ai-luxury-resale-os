@@ -1,17 +1,20 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "baseUrl": ".",
+    "allowJs": true,
+    "jsx": "react-jsx",
     "paths": {
       "@luxury/db": ["packages/db/src/index.ts"],
       "@luxury/agents": ["packages/agents/src/index.ts"],
+      "@cloth/web/types": ["web/src/types/index.ts"],
       "@luxury/product-proof": ["services/product-proof/src/index.ts"],
       "@luxury/listing-crosspost": ["services/listing-crosspost/src/index.ts"],
       "@luxury/content-live": ["services/content-live/src/index.ts"],
@@ -29,6 +32,8 @@
   },
   "include": [
     "apps/**/*.ts",
+    "apps/**/*.tsx",
+    "agent-tasks/**/*.ts",
     "services/**/*.ts",
     "packages/**/*.ts",
     "scripts/**/*.ts"

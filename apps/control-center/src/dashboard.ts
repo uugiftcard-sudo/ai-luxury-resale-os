@@ -1,23 +1,22 @@
 import * as readline from "readline";
-import { agentsForMarket, agentTeam } from "@luxury/agents";
+import { agentsForMarket } from "@luxury/agents";
 import {
   products, proofPacks, orders, leads, customers, liveSessions,
-  seedAll, dataSummary, type Product, type ProofPack, type OrderRecord, type SourcingLead, type CustomerProfile,
-  type LiveSession
+  seedAll, type Product, type SourcingLead, type LiveSession
 } from "@luxury/db";
 import { auditProofPack, calculateProofScore } from "@luxury/product-proof";
 import { generateListings } from "@luxury/listing-crosspost";
 import { generateContentPack } from "@luxury/content-live";
 import { generateProductVideoPack, dailyVideoCalendar } from "@luxury/video-factory";
 import { scoreSourcingLead } from "@luxury/sourcing-engine";
-import { respondToCustomer, createCRMTask } from "@luxury/customer-support-crm";
+import { respondToCustomer } from "@luxury/customer-support-crm";
 import { buildFulfilmentPlan } from "@luxury/order-fulfillment";
 import { buildLiveRunOfShow } from "@luxury/live-ops";
 import { buildControlCenterSnapshot } from "./index.js";
 import {
   sampleProducts, sampleProofPacks, sampleSourcingLeads,
-  sampleOrders, sampleLiveSessions, sampleCustomers
-} from "../../scripts/sample-data.js";
+  sampleOrders, sampleLiveSessions
+} from "../../../scripts/sample-data.js";
 
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
@@ -31,8 +30,6 @@ const YELLOW = "\x1b[33m";
 const CYAN   = "\x1b[36m";
 const MAGENTA= "\x1b[35m";
 const RED    = "\x1b[31m";
-const BLUE   = "\x1b[34m";
-const BG_BLK = "\x1b[40m";
 const CLEAR  = "\x1b[2J\x1b[H";
 
 function label(col: string, text: string) { return `${col}${text}${RESET}`; }
@@ -41,7 +38,6 @@ function ok(text: string)   { return `${GREEN}${text}${RESET}`; }
 function warn(text: string) { return `${YELLOW}${text}${RESET}`; }
 function err(text: string)  { return `${RED}${text}${RESET}`; }
 function dim(text: string)  { return `${DIM}${text}${RESET}`; }
-function cyan(text: string) { return `${CYAN}${text}${RESET}`; }
 
 // ─── divider ────────────────────────────────────────────────────────────────
 
@@ -117,6 +113,7 @@ function renderDashboard(market: "UK" | "HK") {
 
   const stats = buildProductStats(market);
   const snapshot = buildControlCenterSnapshot(market, stats.allProducts, stats.allProofs);
+  void snapshot; // TODO: use snapshot for rendering/dashboard display
 
   // ── inventory ──
   console.log(hdr("  INVENTORY"));
@@ -162,7 +159,7 @@ function renderDashboard(market: "UK" | "HK") {
     ["Video Assets", stats.allProducts.flatMap((p) => generateProductVideoPack(p, stats.proofBySku.get(p.sku))).length],
   ];
   for (const [name, count] of stages) {
-    console.log(`  ${name.padEnd(22)} ${label(GREEN, String(count).padStart(4))}`);
+    console.log(`  ${String(name).padEnd(22)} ${label(GREEN, String(count).padStart(4))}`);
   }
 
   spacer();
@@ -214,7 +211,7 @@ async function cmdListProducts(market: "UK" | "HK") {
 async function cmdScoreLead(market: "UK" | "HK") {
   const marketLeads = leads.findAll().filter((l) => l.market === market);
   if (!marketLeads.length) { console.log(dim("  No sourcing leads in storage. Using sample leads...")); }
-  const allLeads = marketLeads.length ? marketLeads : sampleSourcingLeads.filter((l) => l.market === market);
+  const allLeads = marketLeads.length ? marketLeads : sampleSourcingLeads.filter((l: SourcingLead) => l.market === market);
   for (const lead of allLeads) {
     const result = scoreSourcingLead(lead);
     const decColor = result.decision === "buy" ? GREEN : result.decision === "watch" ? YELLOW : RED;
@@ -311,7 +308,7 @@ async function cmdFulfilment(market: "UK" | "HK") {
 
 async function cmdLiveSession(market: "UK" | "HK") {
   const allSessions = liveSessions.findAll().filter((s) => s.market === market);
-  const all = sampleLiveSessions.filter((s) => s.market === market);
+  const all = sampleLiveSessions.filter((s: LiveSession) => s.market === market);
   const session = (allSessions.length ? allSessions[0] : all[0])!;
   if (!session) { console.log(dim("  No live session.")); return; }
   const sessionProducts = products.findAll().filter((p) => session.productSkus.includes(p.sku));
@@ -363,7 +360,7 @@ async function cmdAddProduct(market: "UK" | "HK") {
   const product: Product = {
     sku, market, brandStream,
     currency: currency as Product["currency"],
-    language: market === "UK" ? "en-GB" : "zh-Tant-HK",
+    language: market === "UK" ? "en-GB" : "zh-Hant-HK",
     title: title.trim(),
     brand: brand.trim() || undefined,
     category: category.trim() || "general",

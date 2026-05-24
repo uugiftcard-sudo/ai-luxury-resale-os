@@ -1,0 +1,9 @@
+{
+  "name": "@luxury/listing-crosspost",
+  "version": "0.1.0",
+  "description": "Multi-platform listing generator and crossposting for CLOTH",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}
