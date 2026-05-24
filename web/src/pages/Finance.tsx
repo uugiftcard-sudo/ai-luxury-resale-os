@@ -4,6 +4,7 @@
  */
 import { useState, useEffect, useMemo } from 'react';
 import { financeApi, INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '../api/finance';
+import { displayPrice } from '../api/client';
 import { useMarket } from '../hooks/useMarket';
 import { useToast } from '../hooks/useToast';
 import type { FinanceRecord, FinanceRecordFormData, FinanceType, FinanceCategory } from '../types';
@@ -11,6 +12,19 @@ import styles from './Finance.module.css';
 
 // ── 常量 ──────────────────────────────────────────────────────────────────────
 const TYPE_OPTIONS: FinanceType[] = ['收入', '支出'];
+
+const CATEGORY_LABELS: Record<string, string> = {
+  商品销售收入: '商品銷售收入',
+  其他收入: '其他收入',
+  商品采购: '商品採購',
+  物流运输: '物流運輸',
+  平台费用: '平台費用',
+  仓储费用: '倉儲費用',
+  营销推广: '營銷推廣',
+  人力成本: '人力成本',
+  税费: '稅費',
+  其他支出: '其他支出',
+};
 
 function emptyForm(): FinanceRecordFormData {
   return {
@@ -25,7 +39,7 @@ function emptyForm(): FinanceRecordFormData {
 
 // ── Component ────────────────────────────────────────────────────────────────
 export default function Finance() {
-  const { market } = useMarket();
+  const { market, config } = useMarket();
   const { showToast } = useToast();
 
   const [records, setRecords] = useState<FinanceRecord[]>([]);
@@ -45,7 +59,7 @@ export default function Finance() {
     setLoading(true);
     financeApi.list(market)
       .then(setRecords)
-      .catch(err => showToast(err instanceof Error ? err.message : '加载失败', 'error'))
+      .catch(err => showToast(err instanceof Error ? err.message : '載入失敗', 'error'))
       .finally(() => setLoading(false));
   }
 
@@ -76,6 +90,7 @@ export default function Finance() {
   }, [filteredRecords]);
 
   const netProfit = stats.totalIncome - stats.totalExpense;
+  const amountLabel = (amount: number) => displayPrice(amount, market);
 
   // ── Form handlers ───────────────────────────────────────────────────────────
   function openAdd(type: FinanceType) {
@@ -100,11 +115,11 @@ export default function Finance() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.amount || Number(form.amount) <= 0) {
-      showToast('请填写正确的金额', 'error');
+      showToast('請填寫正確的金額', 'error');
       return;
     }
     if (!form.description.trim()) {
-      showToast('请填写备注说明', 'error');
+      showToast('請填寫備註說明', 'error');
       return;
     }
     setSubmitting(true);
@@ -116,24 +131,24 @@ export default function Finance() {
       } else {
         const created = await financeApi.create(form, market);
         setRecords(prev => [created, ...prev]);
-        showToast('记录已添加', 'success');
+        showToast('記錄已新增', 'success');
       }
       setFormOpen(false);
     } catch (err: unknown) {
-      showToast(err instanceof Error ? err.message : '操作失败', 'error');
+      showToast(err instanceof Error ? err.message : '操作失敗', 'error');
     } finally {
       setSubmitting(false);
     }
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('确认删除该记录？')) return;
+    if (!confirm('確認刪除此記錄？')) return;
     try {
       await financeApi.delete(id, market);
       setRecords(prev => prev.filter(r => r.id !== id));
       showToast('已删除', 'info');
     } catch {
-      showToast('删除失败', 'error');
+      showToast('刪除失敗', 'error');
     }
   }
 
@@ -147,50 +162,50 @@ export default function Finance() {
         {/* 页面标题 */}
         <div className={styles.pageHeader}>
           <div>
-            <h1>收支记录</h1>
-            <p>收入支出，轻松管理</p>
+            <h1>收支記錄</h1>
+            <p>收入支出，一頁管理</p>
           </div>
         </div>
 
         {/* 统计卡片 */}
         <div className={styles.statsGrid}>
           <div className={`${styles.statCard} ${styles.incomeCard}`}>
-            <span className={styles.statLabel}>总收入</span>
+            <span className={styles.statLabel}>總收入</span>
             <span className={styles.statValue} style={{ color: '#2e7d32' }}>
-              ¥{stats.totalIncome.toLocaleString()}
+              {amountLabel(stats.totalIncome)}
             </span>
-            <span className={styles.statCount}>{stats.incomeCount} 笔收入</span>
+            <span className={styles.statCount}>{stats.incomeCount} 筆收入</span>
           </div>
           <div className={`${styles.statCard} ${styles.expenseCard}`}>
-            <span className={styles.statLabel}>总支出</span>
+            <span className={styles.statLabel}>總支出</span>
             <span className={styles.statValue} style={{ color: '#c62828' }}>
-              ¥{stats.totalExpense.toLocaleString()}
+              {amountLabel(stats.totalExpense)}
             </span>
-            <span className={styles.statCount}>{stats.expenseCount} 笔支出</span>
+            <span className={styles.statCount}>{stats.expenseCount} 筆支出</span>
           </div>
           <div className={`${styles.statCard} ${netProfit >= 0 ? styles.profitCard : styles.lossCard}`}>
-            <span className={styles.statLabel}>净利润</span>
+            <span className={styles.statLabel}>淨利潤</span>
             <span className={styles.statValue} style={{ color: netProfit >= 0 ? '#1565c0' : '#c62828' }}>
-              {netProfit >= 0 ? '+' : '−'}¥{Math.abs(netProfit).toLocaleString()}
+              {netProfit >= 0 ? '+' : '−'}{amountLabel(Math.abs(netProfit))}
             </span>
-            <span className={styles.statCount}>{netProfit >= 0 ? '盈利中' : '亏损中'}</span>
+            <span className={styles.statCount}>{netProfit >= 0 ? '盈利中' : '虧損中'}</span>
           </div>
         </div>
 
         {/* 快速记账入口 */}
         <div className={styles.quickAdd}>
-          <span className={styles.quickAddLabel}>快速记账</span>
+          <span className={styles.quickAddLabel}>快速記帳</span>
           <button className={`${styles.quickAddBtn} ${styles.income}`} onClick={() => openAdd('收入')}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
-            记收入
+            記收入
           </button>
           <button className={`${styles.quickAddBtn} ${styles.expense}`} onClick={() => openAdd('支出')}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
-            记支出
+            記支出
           </button>
         </div>
 
@@ -200,7 +215,7 @@ export default function Finance() {
           {/* 列表头部 */}
           <div className={styles.recordsHeader}>
             <span className={styles.recordsTitle}>
-              {activeTab === 'all' ? '全部记录' : activeTab === 'income' ? '收入记录' : '支出记录'}
+              {activeTab === 'all' ? '全部記錄' : activeTab === 'income' ? '收入記錄' : '支出記錄'}
               &nbsp;({filteredRecords.length})
             </span>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -232,7 +247,7 @@ export default function Finance() {
                 type="date"
                 value={filterDateFrom}
                 onChange={e => setFilterDateFrom(e.target.value)}
-                aria-label="开始月份"
+                aria-label="開始日期"
                 style={{ padding: '6px 10px', border: '1.5px solid var(--color-border)', borderRadius: 'var(--radius-sm)', fontSize: '0.82rem', background: 'var(--color-surface)', color: 'var(--color-text-primary)' }}
               />
               <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>至</span>
@@ -240,7 +255,7 @@ export default function Finance() {
                 type="date"
                 value={filterDateTo}
                 onChange={e => setFilterDateTo(e.target.value)}
-                aria-label="结束月份"
+                aria-label="結束日期"
                 style={{ padding: '6px 10px', border: '1.5px solid var(--color-border)', borderRadius: 'var(--radius-sm)', fontSize: '0.82rem', background: 'var(--color-surface)', color: 'var(--color-text-primary)' }}
               />
               {(filterDateFrom || filterDateTo) && (
@@ -267,8 +282,8 @@ export default function Finance() {
                 <polyline points="14 2 14 8 20 8"/>
                 <line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>
               </svg>
-              <h3>暂无记录</h3>
-              <p>点击上方「记收入」或「记支出」开始记账</p>
+              <h3>暫無記錄</h3>
+              <p>點擊上方「記收入」或「記支出」開始記帳</p>
             </div>
           )}
 
@@ -276,7 +291,7 @@ export default function Finance() {
           {!loading && filteredRecords.map(r => (
             <div key={r.id} className={styles.recordRow}>
               <span className={styles.recordDate}>
-                {new Date(r.date).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })}
+                {new Date(r.date).toLocaleDateString(market === 'UK' ? 'en-GB' : 'zh-HK', { month: 'short', day: 'numeric' })}
               </span>
 
               <div className={styles.recordType}>
@@ -287,16 +302,16 @@ export default function Finance() {
               </div>
 
               <div className={styles.recordInfo}>
-                <span className={styles.recordCategory}>{r.category}</span>
+                <span className={styles.recordCategory}>{CATEGORY_LABELS[r.category] || r.category}</span>
                 <span className={styles.recordDesc}>{r.description}</span>
               </div>
 
               <span className={`${styles.recordAmount} ${r.type === '收入' ? styles.income : styles.expense}`}>
-                {r.type === '收入' ? '+' : '−'}¥{r.amount.toLocaleString()}
+                {r.type === '收入' ? '+' : '−'}{amountLabel(r.amount)}
               </span>
 
               <div className={styles.recordActions}>
-                <button className="btn btn-ghost btn-sm" onClick={() => openEdit(r)} title="编辑">
+                <button className="btn btn-ghost btn-sm" onClick={() => openEdit(r)} title="編輯">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
@@ -305,7 +320,7 @@ export default function Finance() {
                 <button
                   className={`btn btn-ghost btn-sm ${styles.deleteBtn}`}
                   onClick={() => handleDelete(r.id)}
-                  title="删除"
+                  title="刪除"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <polyline points="3 6 5 6 21 6"/>
@@ -321,12 +336,12 @@ export default function Finance() {
 
       </div>
 
-      {/* 新增/编辑模态框 */}
+      {/* 新增/編輯模態框 */}
       {formOpen && (
         <div className="modal-overlay" onClick={() => setFormOpen(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 520 }}>
             <div className={styles.modalHeader}>
-              <h2>{editingId ? '编辑记录' : '新增记录'}</h2>
+              <h2>{editingId ? '編輯記錄' : '新增記錄'}</h2>
               <button className={styles.closeBtn} onClick={() => setFormOpen(false)}>×</button>
             </div>
 
@@ -364,7 +379,7 @@ export default function Finance() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label" htmlFor="finance-category">类别 *</label>
+                  <label className="form-label" htmlFor="finance-category">類別 *</label>
                   <select
                     id="finance-category"
                     className="form-input"
@@ -372,12 +387,12 @@ export default function Finance() {
                     onChange={e => setForm(f => ({ ...f, category: e.target.value as FinanceCategory }))}
                     required
                   >
-                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                    {categories.map(c => <option key={c} value={c}>{CATEGORY_LABELS[c] || c}</option>)}
                   </select>
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label" htmlFor="finance-amount">金额 (¥) *</label>
+                  <label className="form-label" htmlFor="finance-amount">金額 ({config.currencySymbol}) *</label>
                   <input
                     id="finance-amount"
                     className="form-input"
@@ -392,26 +407,26 @@ export default function Finance() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label" htmlFor="finance-order">关联订单</label>
+                  <label className="form-label" htmlFor="finance-order">關聯訂單</label>
                   <input
                     id="finance-order"
                     className="form-input"
                     value={form.relatedOrderId || ''}
                     onChange={e => setForm(f => ({ ...f, relatedOrderId: e.target.value }))}
-                    placeholder="订单号（可选）"
+                    placeholder="訂單號（可選）"
                   />
                 </div>
 
               </div>
 
               <div className="form-group" style={{ marginTop: 'var(--space-md)' }}>
-                <label className="form-label" htmlFor="finance-desc">备注说明 *</label>
+                <label className="form-label" htmlFor="finance-desc">備註說明 *</label>
                 <textarea
                   id="finance-desc"
                   className="form-input form-textarea"
                   value={form.description}
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                  placeholder="简要说明这笔收入/支出的来源或用途"
+                  placeholder="簡要說明這筆收入/支出的來源或用途"
                   rows={3}
                   required
                 />
@@ -422,7 +437,7 @@ export default function Finance() {
                   取消
                 </button>
                 <button type="submit" className="btn btn-primary" disabled={submitting}>
-                  {submitting ? '提交中...' : editingId ? '保存修改' : '确认添加'}
+                  {submitting ? '提交中...' : editingId ? '保存修改' : '確認新增'}
                 </button>
               </div>
             </form>

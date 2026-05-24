@@ -15,7 +15,7 @@ import { useWishlist } from '../hooks/useWishlist';
 const MARKET_OPTIONS: { value: Market; flag: string; label: string; url: string }[] = [
   { value: 'UK', flag: '🇬🇧', label: 'United Kingdom', url: '/' },
   { value: 'HK', flag: '🇭🇰', label: 'Hong Kong', url: '/hk' },
-  { value: 'CN', flag: '🇨🇳', label: '中国', url: '/cn' },
+  { value: 'CN', flag: '🇨🇳', label: '中國', url: '/cn' },
 ];
 
 // ── Category config per market ───────────────────────────────────────────────
@@ -35,7 +35,7 @@ const CATEGORY_LINKS: Record<Market, { label: string; param: string }[]> = {
   CN: [
     { label: '全部商品', param: '' },
     { label: '包袋',     param: '包袋' },
-    { label: '服饰',     param: '服饰' },
+    { label: '服飾',     param: '服饰' },
     { label: '鞋履',     param: '鞋履' },
   ],
 };
@@ -59,13 +59,13 @@ const NAV_COPY: Record<Market, { orders: string; admin: string; search: string; 
     finance: '財務',
   },
   CN: {
-    orders: '我的订单',
+    orders: '我的訂單',
     admin: '管理',
-    search: '搜索品牌、商品...',
-    cart: '购物车',
+    search: '搜尋品牌、商品...',
+    cart: '購物車',
     support: '客服',
-    inventory: '仓库',
-    finance: '财务',
+    inventory: '倉庫',
+    finance: '財務',
   },
 };
 
@@ -102,10 +102,17 @@ export default function Header() {
   const t = NAV_COPY[market] ?? NAV_COPY.CN;
   const currentMarket = MARKET_OPTIONS.find(m => m.value === market)!;
 
+  function marketPath(path: string): string {
+    if (path.startsWith('http')) return path;
+    const prefix = market === 'UK' ? '' : `/${market.toLowerCase()}`;
+    if (path === '/') return prefix || '/';
+    return `${prefix}${path}`;
+  }
+
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     if (searchValue.trim()) {
-      navigate(`/products?search=${encodeURIComponent(searchValue.trim())}`);
+      navigate(marketPath(`/products?search=${encodeURIComponent(searchValue.trim())}`));
       setSearchValue('');
       setMenuOpen(false);
     }
@@ -114,7 +121,7 @@ export default function Header() {
   function handleMobileSearch(e: React.FormEvent) {
     e.preventDefault();
     if (mobileSearchValue.trim()) {
-      navigate(`/products?search=${encodeURIComponent(mobileSearchValue.trim())}`);
+      navigate(marketPath(`/products?search=${encodeURIComponent(mobileSearchValue.trim())}`));
       setMobileSearchValue('');
       setMenuOpen(false);
     }
@@ -227,21 +234,21 @@ export default function Header() {
           {CATEGORY_LINKS[market].map(cat => (
             <Link
               key={cat.label}
-              to={cat.param ? `/products?category=${encodeURIComponent(cat.param)}` : '/products'}
+              to={cat.param ? marketPath(`/products?category=${encodeURIComponent(cat.param)}`) : marketPath('/products')}
               onClick={() => setMenuOpen(false)}
             >
               {cat.label}
             </Link>
           ))}
-          <Link to="/orders" onClick={() => setMenuOpen(false)}>{t.orders}</Link>
-          <Link to="/wishlist" onClick={() => setMenuOpen(false)}>
-            {market === 'UK' ? 'Wishlist' : market === 'HK' ? '心願清單' : '心愿单'}
+          <Link to={marketPath('/orders')} onClick={() => setMenuOpen(false)}>{t.orders}</Link>
+          <Link to={marketPath('/wishlist')} onClick={() => setMenuOpen(false)}>
+            {market === 'UK' ? 'Wishlist' : '心願清單'}
             {wishlistCount > 0 && <span style={{ marginLeft: 6, background: 'var(--color-accent)', color: '#fff', borderRadius: 10, padding: '1px 8px', fontSize: '0.72rem', fontWeight: 700 }}>{wishlistCount}</span>}
           </Link>
-          <Link to="/support" onClick={() => setMenuOpen(false)}>{t.support}</Link>
-          <Link to="/inventory" onClick={() => setMenuOpen(false)}>{t.inventory}</Link>
-          <Link to="/finance" onClick={() => setMenuOpen(false)}>{t.finance}</Link>
-          <Link to="/admin" onClick={() => setMenuOpen(false)} className={styles.adminLink}>{t.admin}</Link>
+          <Link to={marketPath('/support')} onClick={() => setMenuOpen(false)}>{t.support}</Link>
+          <Link to={marketPath('/inventory')} onClick={() => setMenuOpen(false)}>{t.inventory}</Link>
+          <Link to={marketPath('/finance')} onClick={() => setMenuOpen(false)}>{t.finance}</Link>
+          <Link to={marketPath('/admin')} onClick={() => setMenuOpen(false)} className={styles.adminLink}>{t.admin}</Link>
         </nav>
 
         {/* ── Mobile Search Bar ─────────────────────────────────────── */}
@@ -266,7 +273,7 @@ export default function Header() {
         {/* ── Cart + Wishlist + Menu ─────────────────────────────────── */}
         <div className={styles.actions}>
           {/* Wishlist */}
-          <Link to="/wishlist" className={styles.wishlistBtn} aria-label="Wishlist">
+          <Link to={marketPath('/wishlist')} className={styles.wishlistBtn} aria-label="Wishlist">
             <svg width="20" height="20" viewBox="0 0 24 24" fill={wishlistCount > 0 ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
             </svg>
@@ -276,7 +283,7 @@ export default function Header() {
           </Link>
 
           {/* Cart */}
-          <Link to="/cart" className={styles.cartBtn} aria-label={t.cart}>
+          <Link to={marketPath('/cart')} className={styles.cartBtn} aria-label={t.cart}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
               <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
               <line x1="3" y1="6" x2="21" y2="6"/>

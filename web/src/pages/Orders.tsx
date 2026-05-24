@@ -11,8 +11,8 @@ import styles from './Orders.module.css';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   '待付款': { label: '待付款', color: '#c9a96e' },
-  '待发货': { label: '待发货', color: '#2c5282' },
-  '已发货': { label: '已发货', color: '#6b46c1' },
+  '待发货': { label: '待發貨', color: '#2c5282' },
+  '已发货': { label: '已發貨', color: '#6b46c1' },
   '已完成': { label: '已完成', color: '#4a7c59' },
   '已取消': { label: '已取消', color: '#9e9893' },
 };
@@ -35,7 +35,7 @@ export default function Orders() {
       <div className="container">
         <div className={styles.header}>
           <h1>
-            {market === 'UK' ? 'My Orders' : market === 'HK' ? '我的訂單' : '我的订单'}
+            {market === 'UK' ? 'My Orders' : '我的訂單'}
           </h1>
         </div>
 
@@ -47,7 +47,7 @@ export default function Orders() {
               className={`${styles.tab} ${filterStatus === s ? styles.tabActive : ''}`}
               onClick={() => setFilterStatus(s)}
             >
-              {s || (market === 'UK' ? 'All' : '全部')}
+              {s ? (market === 'UK' ? s : STATUS_CONFIG[s]?.label || s) : (market === 'UK' ? 'All' : '全部')}
             </button>
           ))}
         </div>
@@ -57,10 +57,10 @@ export default function Orders() {
         ) : orders.length === 0 ? (
           <div className="empty-state">
             <h3>
-              {market === 'UK' ? 'No orders yet' : market === 'HK' ? '暫無訂單' : '暂无订单'}
+              {market === 'UK' ? 'No orders yet' : '暫無訂單'}
             </h3>
-            <p>{market === 'UK' ? 'Start shopping to see your orders here.' : '开始选购心仪的奢品吧'}</p>
-            <Link to="/products" className="btn btn-primary">
+            <p>{market === 'UK' ? 'Start shopping to see your orders here.' : '開始選購心儀的奢品吧'}</p>
+            <Link to={market === 'HK' ? '/hk/products' : market === 'CN' ? '/cn/products' : '/products'} className="btn btn-primary">
               {market === 'UK' ? 'Browse Now' : '去逛逛'}
             </Link>
           </div>
@@ -70,13 +70,13 @@ export default function Orders() {
               <div key={order.id} className={styles.orderCard}>
                 <div className={styles.orderTop}>
                   <span className={styles.orderId}>
-                    {market === 'UK' ? 'Order' : '订单号'}: {order.id}
+                    {market === 'UK' ? 'Order' : '訂單號'}: {order.id}
                   </span>
                   <span
                     className={styles.statusBadge}
                     style={{ color: STATUS_CONFIG[order.status]?.color, borderColor: STATUS_CONFIG[order.status]?.color }}
                   >
-                    {order.status}
+                    {market === 'UK' ? order.status : STATUS_CONFIG[order.status]?.label || order.status}
                   </span>
                 </div>
 
@@ -90,7 +90,7 @@ export default function Orders() {
                   </div>
                   <div className={styles.orderPrice}>
                     <span className={styles.totalLabel}>
-                      {market === 'UK' ? 'Total' : '实付金额'}
+                      {market === 'UK' ? 'Total' : '實付金額'}
                     </span>
                     <span className={styles.totalPrice}>
                       ¥{order.totalPrice.toLocaleString()}
@@ -100,13 +100,13 @@ export default function Orders() {
 
                 <div className={styles.orderMeta}>
                   <span>
-                    {market === 'UK' ? 'Placed: ' : '下单时间: '}
+                    {market === 'UK' ? 'Placed: ' : '下單時間: '}
                     {new Date(order.createdAt).toLocaleString(
-                      market === 'UK' ? 'en-GB' : 'zh-CN',
+                      market === 'UK' ? 'en-GB' : 'zh-HK',
                     )}
                   </span>
                   {order.product && (
-                    <Link to={`/products/${order.productId}`} className={styles.viewProduct}>
+                    <Link to={market === 'HK' ? `/hk/products/${order.productId}` : market === 'CN' ? `/cn/products/${order.productId}` : `/products/${order.productId}`} className={styles.viewProduct}>
                       {market === 'UK' ? 'View Item →' : '查看商品 →'}
                     </Link>
                   )}
