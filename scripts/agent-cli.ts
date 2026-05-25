@@ -124,7 +124,7 @@ async function runCLI() {
       dryRun,
     });
 
-    const totalMs = result.totalDurationMs ?? Date.now() - start;
+    void (result.totalDurationMs ?? Date.now() - start);
 
     // ── Write JSON output ──────────────────────────────────────────────
     if (jsonOutput || outputPath) {

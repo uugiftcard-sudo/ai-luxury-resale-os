@@ -1,0 +1,9 @@
+{
+  "name": "@luxury/content-live",
+  "version": "0.1.0",
+  "description": "Short-video hooks, captions, and live rundown generator for CLOTH",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

@@ -1,36 +1,27 @@
 {
-  "name": "ai-luxury-resale-os",
-  "version": "0.1.0",
+  "name": "cloth-marketplace",
+  "version": "1.0.0",
+  "description": "CLOTH - 中国二手奢侈品时尚交易平台",
   "private": true,
-  "description": "UK + Hong Kong AI one-person luxury resale operating system monorepo.",
-  "type": "module",
-  "scripts": {
-    "check": "tsc --noEmit",
-    "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
-    "demo": "tsx scripts/demo.ts",
-    "test:scenarios": "tsx scripts/run-scenarios.ts",
-    "deck": "python3 scripts/generate_ppt.py",
-    "deck:main": "python3 scripts/generate_shopify_tiktok_ppt.py",
-    "deck:safe": "/Users/rubykan/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 scripts/generate_safe_ppt.py",
-    "doc:summary": "/Users/rubykan/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 scripts/generate_summary_doc.py",
-    "doc:kid": "/Users/rubykan/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 scripts/generate_kid_manual_doc.py",
-    "agent:run": "tsx scripts/agent-cli.ts",
-    "agent:dry-run": "tsx scripts/agent-cli.ts --dry-run --json",
-    "agent:uk": "tsx scripts/agent-cli.ts --market UK --json",
-    "agent:hk": "tsx scripts/agent-cli.ts --market HK --json"
-  },
   "workspaces": [
-    "apps/*",
-    "services/*",
+    "api",
+    "web",
+    "scripts/*",
     "packages/*"
   ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace=api\" \"npm run dev --workspace=web\"",
+    "build": "npm run build --workspace=api && npm run build --workspace=web",
+    "lint": "eslint api/src web/src --max-warnings=20",
+    "check": "npm run build",
+    "start": "npm run start --workspace=api",
+    "test:scenarios": "node --test scripts/api-validation-errors.test.mjs scripts/product-market-persistence.test.mjs scripts/mobile-nav-contract.test.mjs scripts/api-smoke.test.mjs && node --import tsx --test api/src/db/sqlite-store.test.ts",
+    "agent:run": "node_modules/.bin/tsx scripts/run-cycle.ts"
+  },
   "devDependencies": {
-    "@types/node": "^22.10.0",
-    "@typescript-eslint/eslint-plugin": "^8.0.0",
-    "@typescript-eslint/parser": "^8.0.0",
-    "eslint": "^9.0.0",
-    "tsx": "^4.19.2",
-    "typescript": "^5.7.2",
+    "@eslint/js": "^10.0.1",
+    "concurrently": "^8.2.2",
     "typescript-eslint": "^8.59.4"
-  }
+  },
+  "type": "module"
 }

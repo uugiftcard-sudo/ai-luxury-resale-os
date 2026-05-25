@@ -36,6 +36,12 @@ export interface DispatcherResult {
   totalDurationMs?: number;
   markets: string[];
   agents: AgentResult[];
+  // Task outputs consumed by the Execution Engine
+  listingTasks?: ListingTask[];
+  contentTasks?: ContentTask[];
+  captionsByPlatform?: Record<string, string[]>;
+  sourcingItems?: SourcingQueueItem[];
+  riskAlerts?: RiskAlert[];
   summary: {
     totalItemsProcessed: number;
     totalTasksGenerated: number;

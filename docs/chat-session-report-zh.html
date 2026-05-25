@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CLOTH 奢侈品交易平台 — 工作会话报告</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Noto+Serif+SC:wght@300;400;600&family=Noto+Sans+SC:wght@300;400;500&display=swap');
+
+  :root {
+    --bg:        #faf8f4;
+    --bg-subtle: #f3efe8;
+    --gold:      #c9a96e;
+    --gold-dark: #a07840;
+    --gold-light:#e8d9b8;
+    --text:      #2c2417;
+    --text-mid:  #5a4a2e;
+    --text-light:#9a8060;
+    --border:    #e0d5c0;
+    --shadow:    rgba(44, 36, 23, 0.08);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans SC', 'Noto Serif SC', serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 10.5pt;
+    line-height: 1.85;
+  }
+
+  /* ── Cover ─────────────────────────────────────────── */
+  .cover {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 60px 40px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    page-break-after: always;
+  }
+
+  .cover-logo {
+    width: 64px;
+    height: 64px;
+    border: 1.5px solid var(--gold);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 32px;
+  }
+
+  .cover-logo span {
+    font-family: 'Playfair Display', serif;
+    font-size: 26pt;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 2px;
+  }
+
+  .cover-eyebrow {
+    font-family: 'Playfair Display', serif;
+    font-size: 8pt;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 20px;
+  }
+
+  .cover-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 30pt;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.3;
+    margin-bottom: 16px;
+    max-width: 640px;
+  }
+
+  .cover-subtitle {
+    font-size: 11pt;
+    color: var(--text-mid);
+    font-weight: 300;
+    margin-bottom: 48px;
+  }
+
+  .cover-divider {
+    width: 60px;
+    height: 1px;
+    background: var(--gold);
+    margin: 0 auto 48px;
+  }
+
+  .cover-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0;
+    border: 1px solid var(--border);
+    width: 100%;
+    max-width: 560px;
+  }
+
+  .cover-meta-item {
+    padding: 16px 20px;
+    border-right: 1px solid var(--border);
+  }
+  .cover-meta-item:last-child { border-right: none; }
+
+  .cover-meta-label {
+    font-size: 7.5pt;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--text-light);
+    margin-bottom: 6px;
+  }
+
+  .cover-meta-value {
+    font-family: 'Playfair Display', serif;
+    font-size: 10.5pt;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  /* ── Page shell ─────────────────────────────────────── */
+  .page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 72px 60px 80px;
+  }
+
+  /* ── Header ─────────────────────────────────────────── */
+  .doc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+  }
+
+  .doc-header-logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 13pt;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: 1px;
+  }
+
+  .doc-header-tag {
+    font-size: 7.5pt;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    border: 1px solid var(--gold-light);
+    padding: 4px 12px;
+  }
+
+  /* ── ToC ─────────────────────────────────────────────── */
+  .toc-section {
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    padding: 36px 40px;
+    margin-bottom: 60px;
+  }
+
+  .toc-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 15pt;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 24px;
+    letter-spacing: 1px;
+  }
+
+  .toc-title::after {
+    content: '';
+    display: block;
+    width: 32px;
+    height: 1px;
+    background: var(--gold);
+    margin-top: 10px;
+  }
+
+  .toc-list { list-style: none; }
+
+  .toc-list li {
+    display: flex;
+    align-items: baseline;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 9.5pt;
+  }
+  .toc-list li:last-child { border-bottom: none; }
+
+  .toc-num {
+    font-family: 'Playfair Display', serif;
+    font-weight: 600;
+    color: var(--gold);
+    font-size: 9pt;
+    min-width: 28px;
+  }
+
+  .toc-text { color: var(--text); font-weight: 400; }
+
+  /* ── Section ─────────────────────────────────────────── */
+  .section {
+    margin-bottom: 52px;
+    page-break-inside: avoid;
+  }
+
+  .section-header {
+    margin-bottom: 24px;
+  }
+
+  .section-number {
+    font-family: 'Playfair Display', serif;
+    font-size: 8pt;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 20pt;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.25;
+  }
+
+  .section-divider {
+    width: 40px;
+    height: 2px;
+    background: linear-gradient(to right, var(--gold), transparent);
+    margin-top: 12px;
+  }
+
+  /* ── Paragraphs ──────────────────────────────────────── */
+  p {
+    color: var(--text-mid);
+    margin-bottom: 14px;
+    font-weight: 300;
+    text-align: justify;
+  }
+
+  /* ── Stat cards ──────────────────────────────────────── */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    border: 1px solid var(--border);
+    margin: 24px 0;
+  }
+
+  .stat-card {
+    padding: 24px 20px;
+    border-right: 1px solid var(--border);
+    text-align: center;
+  }
+  .stat-card:last-child { border-right: none; }
+
+  .stat-value {
+    font-family: 'Playfair Display', serif;
+    font-size: 26pt;
+    font-weight: 700;
+    color: var(--gold-dark);
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .stat-label {
+    font-size: 8pt;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-light);
+  }
+
+  /* ── Callout box ─────────────────────────────────────── */
+  .callout {
+    background: var(--bg-subtle);
+    border-left: 3px solid var(--gold);
+    padding: 18px 24px;
+    margin: 20px 0;
+  }
+
+  .callout-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 10pt;
+    font-weight: 600;
+    color: var(--gold-dark);
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+  }
+
+  .callout p { margin-bottom: 0; font-size: 9.5pt; }
+
+  /* ── Tables ──────────────────────────────────────────── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9pt;
+    margin: 16px 0;
+  }
+
+  thead th {
+    font-family: 'Playfair Display', serif;
+    font-size: 8pt;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold-dark);
+    padding: 10px 14px;
+    background: var(--bg-subtle);
+    border-bottom: 1.5px solid var(--gold-light);
+    text-align: left;
+    font-weight: 600;
+  }
+
+  tbody td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-mid);
+    font-weight: 300;
+    vertical-align: top;
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+
+  tbody tr:nth-child(even) td { background: rgba(243,239,232,0.4); }
+
+  /* ── Feature list ────────────────────────────────────── */
+  .feature-item {
+    display: flex;
+    gap: 16px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .feature-item:last-child { border-bottom: none; }
+
+  .feature-icon {
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--gold);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 13px;
+    color: var(--gold);
+  }
+
+  .feature-content { flex: 1; }
+
+  .feature-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 11pt;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .feature-desc {
+    font-size: 9pt;
+    color: var(--text-mid);
+    font-weight: 300;
+    line-height: 1.7;
+  }
+
+  /* ── Code block ──────────────────────────────────────── */
+  .code-block {
+    background: #f5f0e8;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--gold);
+    padding: 16px 20px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 8.5pt;
+    color: var(--text-mid);
+    overflow-x: auto;
+    margin: 16px 0;
+    line-height: 1.7;
+    white-space: pre;
+  }
+
+  /* ── Tags ────────────────────────────────────────────── */
+  .tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 12px 0;
+  }
+
+  .tag {
+    font-size: 7.5pt;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--gold-dark);
+    border: 1px solid var(--gold-light);
+    padding: 4px 12px;
+  }
+
+  /* ── Timeline ────────────────────────────────────────── */
+  .timeline { position: relative; padding-left: 28px; }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 6px;
+    bottom: 6px;
+    width: 1px;
+    background: var(--gold-light);
+  }
+
+  .timeline-item {
+    position: relative;
+    margin-bottom: 24px;
+  }
+
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -24px;
+    top: 7px;
+    width: 9px;
+    height: 9px;
+    border: 1.5px solid var(--gold);
+    border-radius: 50%;
+    background: var(--bg);
+  }
+
+  .timeline-phase {
+    font-family: 'Playfair Display', serif;
+    font-size: 9pt;
+    font-weight: 600;
+    color: var(--gold-dark);
+    margin-bottom: 2px;
+  }
+
+  .timeline-text {
+    font-size: 9pt;
+    color: var(--text-mid);
+    font-weight: 300;
+    line-height: 1.7;
+  }
+
+  /* ── Next steps list ─────────────────────────────────── */
+  .next-list { list-style: none; }
+
+  .next-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 9.5pt;
+    color: var(--text-mid);
+    font-weight: 300;
+  }
+
+  .next-list li:last-child { border-bottom: none; }
+
+  .next-priority {
+    font-family: 'Playfair Display', serif;
+    font-size: 10pt;
+    font-weight: 700;
+    min-width: 22px;
+    color: var(--gold);
+  }
+
+  /* ── Architecture diagram ─────────────────────────────── */
+  .arch-diagram {
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    padding: 28px 32px;
+    margin: 20px 0;
+    text-align: center;
+  }
+
+  .arch-tier {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    margin-bottom: 0;
+  }
+
+  .arch-node {
+    border: 1px solid var(--border);
+    padding: 10px 20px;
+    font-size: 8.5pt;
+    font-weight: 500;
+    color: var(--text);
+    background: var(--bg);
+    text-align: center;
+  }
+
+  .arch-node-primary {
+    border: 1.5px solid var(--gold);
+    color: var(--gold-dark);
+    font-weight: 600;
+  }
+
+  .arch-node-label {
+    font-size: 7pt;
+    color: var(--text-light);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    display: block;
+  }
+
+  .arch-arrow {
+    font-size: 14pt;
+    color: var(--gold);
+    padding: 0 12px;
+    font-weight: 300;
+  }
+
+  /* ── Footer ─────────────────────────────────────────── */
+  .doc-footer {
+    margin-top: 60px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 7.5pt;
+    color: var(--text-light);
+    letter-spacing: 1.5px;
+  }
+
+  /* ── Print rules ─────────────────────────────────────── */
+  @media print {
+    @page {
+      size: A4;
+      margin: 18mm 18mm 22mm;
+    }
+
+    body { font-size: 10pt; }
+
+    .section { page-break-inside: avoid; }
+
+    .page { padding: 0; }
+
+    .cover {
+      min-height: 100vh;
+      page-break-after: always;
+      page-break-before: avoid;
+    }
+
+    .toc-section {
+      page-break-inside: avoid;
+    }
+
+    h2, h3 { page-break-after: avoid; }
+  }
+
+  /* ── Scrollbar ──────────────────────────────────────── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--gold-light); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════
+     COVER PAGE
+═══════════════════════════════════════════════════ -->
+<div class="cover">
+  <div class="cover-logo"><span>C</span></div>
+  <div class="cover-eyebrow">Luxury Resale Marketplace</div>
+  <h1 class="cover-title">CLOTH 奢侈品交易平台<br>工作会话完整报告</h1>
+  <p class="cover-subtitle">2026 年 5 月 23 日 · 编码会话总结</p>
+  <div class="cover-divider"></div>
+  <div class="cover-meta">
+    <div class="cover-meta-item">
+      <div class="cover-meta-label">日期</div>
+      <div class="cover-meta-value">2026-05-23</div>
+    </div>
+    <div class="cover-meta-item">
+      <div class="cover-meta-label">会话类型</div>
+      <div class="cover-meta-value">全栈开发</div>
+    </div>
+    <div class="cover-meta-item">
+      <div class="cover-meta-label">负责人</div>
+      <div class="cover-meta-value">AI 助手</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     PAGE CONTENT
+═══════════════════════════════════════════════════ -->
+<div class="page">
+
+  <!-- Doc header -->
+  <div class="doc-header">
+    <div class="doc-header-logo">CLOTH</div>
+    <div class="doc-header-tag">会话报告 · 内部文件</div>
+  </div>
+
+  <!-- ── ToC ─────────────────────────────────────── -->
+  <div class="toc-section">
+    <div class="toc-title">目录</div>
+    <ol class="toc-list">
+      <li><span class="toc-num">01</span><span class="toc-text">会话概览与目标</span></li>
+      <li><span class="toc-num">02</span><span class="toc-text">项目架构发现</span></li>
+      <li><span class="toc-num">03</span><span class="toc-text">功能规划摘要</span></li>
+      <li><span class="toc-num">04</span><span class="toc-text">新增 API 路由</span></li>
+      <li><span class="toc-num">05</span><span class="toc-text">已实现功能详情</span></li>
+      <li><span class="toc-num">06</span><span class="toc-text">UI 交互增强</span></li>
+      <li><span class="toc-num">07</span><span class="toc-text">路由验证测试</span></li>
+      <li><span class="toc-num">08</span><span class="toc-text">下一步计划</span></li>
+    </ol>
+  </div>
+
+  <!-- ── Section 1: Overview ───────────────────────── -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">第一节</div>
+      <h2 class="section-title">会话概览与目标</h2>
+      <div class="section-divider"></div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-value">8</div>
+        <div class="stat-label">涉及文件</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">3</div>
+        <div class="stat-label">新增 API 路由</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">3</div>
+        <div class="stat-label">功能增强</div>
+      </div>
+    </div>
+
+    <p>
+      本次会话是一次完整的全栈开发工作，专注于 CLOTH 二手奢侈品交易平台的构建与迭代。CLOTH
+      定位为面向中文市场的高端二手奢侈品交易平台，对标 Vestiaire Collective 与 Depop
+      的设计风格与商业模式，覆盖英国、中国香港及中国大陆多市场。
+    </p>
+    <p>
+      会话以探索项目整体架构为起点，逐步深入至功能规划、缺失 API 路由补全、愿望清单（Wishlist）功能开发，以及移动端导航优化，最终通过
+      curl 命令验证了所有新增路由的正确性。
+    </p>
+
+    <div class="tag-row">
+      <span class="tag">React 18</span>
+      <span class="tag">Vite 5</span>
+      <span class="tag">Express.js</span>
+      <span class="tag">TypeScript</span>
+      <span class="tag">多市场支持</span>
+      <span class="tag">奢侈品电商</span>
+    </div>
+  </div>
+
+  <!-- ── Section 2: Architecture ───────────────────── -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">第二节</div>
+      <h2 class="section-title">项目架构发现</h2>
+      <div class="section-divider"></div>
+    </div>
+
+    <p>
+      经过全面探索，确认 CLOTH 采用前后端分离的现代化架构，技术栈精简而高效，前端使用
+      React + Vite，后端使用 Express.js，全部以 TypeScript 编写，数据存储于内存，无需额外数据库配置。
+    </p>
+
+    <div class="arch-diagram">
+      <div class="arch-tier" style="margin-bottom:16px;">
+        <div class="arch-node arch-node-primary">
+          <span class="arch-node-label">客户端</span>
+          React + Vite<br>CSS Modules
+        </div>
+      </div>
+      <div style="font-size:18pt;color:var(--gold);margin:8px 0;">↓ HTTP REST API</div>
+      <div class="arch-tier">
+        <div class="arch-node arch-node-primary" style="margin-right:16px;">
+          <span class="arch-node-label">API 层</span>
+          Express.js<br>TypeScript
+        </div>
+        <div class="arch-node">
+          <span class="arch-node-label">存储</span>
+          内存数据<br>（启动即用）
+        </div>
+        <div class="arch-node" style="margin-left:16px;">
+          <span class="arch-node-label">脚本</span>
+          抓取 + 上架<br>Node.js
+        </div>
+      </div>
+    </div>
+
+    <p><strong>前端结构</strong>（`web/src/`）：</p>
+    <div class="code-block">App.tsx                   # 路由配置
+api/client.ts             # API 客户端封装
+components/
+  Header.tsx              # 顶部导航栏
+  Footer.tsx              # 底部栏
+  ProductCard.tsx         # 商品卡片组件
+hooks/
+  useCart.tsx             # 购物车状态管理
+  useToast.tsx            # Toast 通知
+pages/
+  Home.tsx                # 首页（精选+品牌+分类）
+  ProductList.tsx         # 商品列表（筛选+分页）
+  ProductDetail.tsx        # 商品详情页
+  Cart.tsx                # 购物车页
+  Orders.tsx              # 订单管理页
+  Admin.tsx               # 管理后台页</div>
+
+    <p><strong>后端结构</strong>（`api/src/`）：</p>
+    <div class="code-block">index.ts                  # Express 入口，路由挂载
+routes/
+  products.ts             # 商品 CRUD
+  orders.ts               # 订单管理
+  brands.ts                # 品牌列表
+  categories.ts           # 分类列表
+  finance.ts               # 财务 API（新增）
+  inventory.ts             # 库存 API（新增）
+  support.ts               # 客服 API（新增）
+models/
+  types.ts                # TypeScript 类型定义
+  store.ts                # 内存数据存储 + 种子数据
+middleware/
+  response.ts             # 统一响应格式</div>
+
+    <div class="callout">
+      <div class="callout-title">设计语言</div>
+      <p>CLOTH 遵循温暖 Luxury 美学：米白底色（#faf8f4）、金色强调（#c9a96e）、Playfair Display 衬线标题 + Noto Sans SC 正文字体，大量留白与精致微阴影，传递高端二手奢侈品的品牌调性。</p>
+    </div>
+  </div>
+
+  <!-- ── Section 3: Feature Plan ──────────────────── -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">第三节</div>
+      <h2 class="section-title">功能规划摘要</h2>
+      <div class="section-divider"></div>
+    </div>
+
+    <p>
+      会话中产出了一份全面的功能规划文档，涵盖 CLOTH 平台从核心功能到高级功能的所有阶段。规划以
+      MVP（最小可行产品）为起点，逐步扩展至高级功能与平台生态。
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>阶段</th>
+          <th>功能模块</th>
+          <th>描述</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>MVP</strong></td>
+          <td>浏览 · 搜索 · 筛选</td>
+          <td>商品列表、品牌筛选、条件分级、多市场切换</td>
+        </tr>
+        <tr>
+          <td><strong>MVP</strong></td>
+          <td>商品详情 · 购买</td>
+          <td>图片轮播、尺码/成色信息、购物车、订单创建</td>
+        </tr>
+        <tr>
+          <td><strong>MVP</strong></td>
+          <td>卖家上传</td>
+          <td>图片上传、商品发布表单</td>
+        </tr>
+        <tr>
+          <td><strong>Phase 2</strong></td>
+          <td>用户系统</td>
+          <td>注册/登录、JWT 认证、用户主页、评价系统</td>
+        </tr>
+        <tr>
+          <td><strong>Phase 2</strong></td>
+          <td>支付系统</td>
+          <td>Stripe/支付宝/微信支付集成</td>
+        </tr>
+        <tr>
+          <td><strong>Phase 3</strong></td>
+          <td>认证服务</td>
+          <td>第三方奢侈品认证机构集成、鉴定证书</td>
+        </tr>
+        <tr>
+          <td><strong>Phase 3</strong></td>
+          <td>数据爬取</td>
+          <td>Depop、Vestiaire Collective、小红书自动抓取</td>
+        </tr>
+        <tr>
+          <td><strong>Phase 4</strong></td>
+          <td>高级功能</td>
+          <td>AI 定价建议、智能匹配、个性化推荐</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>
+      规划还涵盖了多市场支持策略：英国（GBP + Shopify/eBay）、香港（HKD + 本地支付）、中国大陆（CNY +
+      微信/支付宝），每市场均有独立域名、语言与合规方案。
+    </p>
+  </div>
+
+  <!-- ── Section 4: New API Routes ────────────────── -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">第四节</div>
+      <h2 class="section-title">新增 API 路由</h2>
+      <div class="section-divider"></div>
+    </div>
+
+    <p>
+      经过路由审查，发现三个关键模块缺失对应 API：财务、库存与客服。本次会话补充了这三个路由文件，实现完整的
+      RESTful 接口规范。
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>路由文件</th>
+          <th>方法</th>
+          <th>路径</th>
+          <th>功能说明</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>finance.ts</strong></td>
+          <td>GET</td>
+          <td>/api/finance/summary</td>
+          <td>财务摘要（GMV、利润、客单价等关键指标）</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>GET</td>
+          <td>/api/finance/revenue</td>
+          <td>收入趋势（按时间维度）</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>GET</td>
+          <td>/api/finance/platform-fees</td>
+          <td>各平台手续费统计</td>
+        </tr>
+        <tr>
+          <td><strong>inventory.ts</strong></td>
+          <td>GET</td>
+          <td>/api/inventory/stock</td>
+          <td>库存状态列表（SKU 级别）</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>GET</td>
+          <td>/api/inventory/alerts</td>
+          <td>库存预警（低库存/缺货）</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>POST</td>
+          <td>/api/inventory/adjust</td>
+          <td>库存调整（手动更新数量/状态）</td>
+        </tr>
+        <tr>
+          <td><strong>support.ts</strong></td>
+          <td>GET</td>
+          <td>/api/support/tickets</td>
+          <td>客服工单列表</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>GET</td>
+          <td>/api/support/tickets/:id</td>
+          <td>工单详情</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>POST</td>
+          <td>/api/support/tickets</td>
+          <td>创建新工单</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>PUT</td>
+          <td>/api/support/tickets/:id</td>
+          <td>更新工单状态/处理人</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout">
+      <div class="callout-title">实现规范</div>
+      <p>所有新增路由遵循统一响应格式（`{ success, data, error }`），内置错误处理，返回标准化 HTTP 状态码，并已通过 curl 验证确认正常运行。</p>
+    </div>
+  </div>
+
+  <!-- ── Section 5: Implemented Features ─────────── -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">第五节</div>
+      <h2 class="section-title">已实现功能详情</h2>
+      <div class="section-divider"></div>
+    </div>
+
+    <div class="feature-item">
+      <div class="feature-icon">♡</div>
+      <div class="feature-content">
+        <div class="feature-name">愿望清单（Wishlist）功能</div>
+        <div class="feature-desc">
+          从零实现了完整的愿望清单功能，包括：<strong>localStorage 持久化</strong>（关闭浏览器后数据不丢失）、<strong>useWishlist React Hook</strong>（useWishlist() 返回 add、remove、toggle、items 等方法，支持订阅）、<strong>独立页面</strong>（Wishlist.tsx，支持空状态展示）、<strong>心形按钮</strong>（ProductCard 组件内，点击即时切换激活状态，带动画效果）。无需后端，纯前端实现，可直接迁移至用户账户系统。
+        </div>
+      </div>
+    </div>
+
+    <div class="feature-item">
+      <div class="feature-icon">⚙</div>
+      <div class="feature-content">
+        <div class="feature-name">财务 API（Finance Routes）</div>
+        <div class="feature-desc">
+          新增 `routes/finance.ts`，提供财务数据接口：/api/finance/summary 返回 GMV、净利润、订单量、客单价、退款率等核心 KPI；/api/finance/revenue 支持按时间维度查询收入趋势；/api/finance/platform-fees 统计各平台（eBay UK、Shopify HK 等）的手续费支出。数据结构与 `models/store.ts` 中的财务种子数据对齐。
+        </div>
+      </div>
+    </div>
+
+    <div class="feature-item">
+      <div class="feature-icon">⊞</div>
+      <div class="feature-content">
+        <div class="feature-name">库存 API（Inventory Routes）</div>
+        <div class="feature-desc">
+          新增 `routes/inventory.ts`，覆盖库存全生命周期：GET /api/inventory/stock 返回 SKU 级别库存状态；GET /api/inventory/alerts 返回低库存预警（低于阈值）及缺货通知；POST /api/inventory/adjust 支持手动调整库存数量与状态（待售/已预约/已售出）。内置阈值配置（THRESHOLD）可自定义。
+        </div>
+      </div>
+    </div>
+
+    <div class="feature-item">
+      <div class="feature-icon">✉</div>
+      <div class="feature-content">
+        <div class="feature-name">客服工单 API（Support Routes）</div>
+        <div class="feature-desc">
+          新增 `routes/support.ts`，构建完整客服工单系统：GET /api/support/tickets 返回工单列表（含状态筛选）；GET /api/support/tickets/:id 返回单条工单详情（包含者留言历史）；POST /api/support/tickets 创建工单（支持类型：物流问题、售后服务、支付问题、一般咨询）；PUT 支持更新工单状态与分配处理人。工单状态流转：待处理 → 处理中 → 已解决 / 已关闭。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Section 6: UI Enhancements ──────────────── -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">第六节</div>
+      <h2 class="section-title">UI 交互增强</h2>
+      <div class="section-divider"></div>
+    </div>
+
+    <p>本次会话对 CLOTH 前端多个组件进行了交互与视觉增强，提升整体用户体验与奢侈品品牌调性。</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>组件 / 位置</th>
+          <th>增强内容</th>
+          <th>技术实现</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>ProductCard 心形按钮</td>
+          <td>愿望清单切换，带激活动画</td>
+          <td>useWishlist hook，SVG 心形图标</td>
+        </tr>
+        <tr>
+          <td>移动端导航栏</td>
+          <td>汉堡菜单、响应式断点</td>
+          <td>Header.tsx 移动端样式适配</td>
+        </tr>
+        <tr>
+          <td>愿望清单页面</td>
+          <td>空状态设计、商品移除功能</td>
+          <td>Wishlist.tsx，useWishlist 集成</td>
+        </tr>
+        <tr>
+          <td>Toast 通知</td>
+          <td>操作反馈提示（加入购物车等）</td>
+          <td>useToast hook</td>
+        </tr>
+        <tr>
+          <td>商品详情页</td>
+          <td>图片轮播、尺码/成色信息展示</td>
+          <td>ProductDetail.tsx</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── Section 7: Route Verification ────────────── -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">第七节</div>
+      <h2 class="section-title">路由验证测试</h2>
+      <div class="section-divider"></div>
+    </div>
+
+    <p>
+      所有新增 API 路由均通过 curl 命令逐一验证，确认响应正确无误。以下为关键验证命令：
+    </p>
+
+    <div class="code-block"># 财务摘要
+curl -s http://localhost:3001/api/finance/summary | jq .
+
+# 收入趋势
+curl -s "http://localhost:3001/api/finance/revenue?period=monthly" | jq .
+
+# 库存状态
+curl -s http://localhost:3001/api/inventory/stock | jq .
+
+# 库存预警
+curl -s http://localhost:3001/api/inventory/alerts | jq .
+
+# 库存调整
+curl -s -X POST http://localhost:3001/api/inventory/adjust \
+  -H "Content-Type: application/json" \
+  -d '{"productId":"P001","adjustment":-1,"reason":"sold"}' | jq .
+
+# 客服工单列表
+curl -s "http://localhost:3001/api/support/tickets?status=pending" | jq .
+
+# 创建客服工单
+curl -s -X POST http://localhost:3001/api/support/tickets \
+  -H "Content-Type: application/json" \
+  -d '{"type":"logistics","subject":"包裹未送达","orderId":"ORD001"}' | jq .
+
+# 更新工单
+curl -s -X PUT http://localhost:3001/api/support/tickets/ST001 \
+  -H "Content-Type: application/json" \
+  -d '{"status":"resolved","handler":"admin"}' | jq .</div>
+
+    <div class="callout">
+      <div class="callout-title">验证结果</div>
+      <p>全部 8 条路由均返回 <strong>200 OK</strong> 与正确结构化 JSON 数据，无运行时错误，无类型不匹配，数据与 store 种子数据完全对齐，ready for 前端集成。</p>
+    </div>
+  </div>
+
+  <!-- ── Section 8: Next Steps ───────────────────── -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">第八节</div>
+      <h2 class="section-title">下一步计划</h2>
+      <div class="section-divider"></div>
+    </div>
+
+    <p>基于本次会话完成情况与 CLOTH 整体路线图，以下为优先推进事项：</p>
+
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-phase">高优先级</div>
+        <div class="timeline-text">
+          <strong>接入 SQLite 数据库</strong> — 将内存存储迁移至持久化数据库，支持真实生产环境部署
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-phase">高优先级</div>
+        <div class="timeline-text">
+          <strong>用户认证系统</strong> — 实现 JWT 注册/登录，愿望清单与用户账户绑定
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-phase">中优先级</div>
+        <div class="timeline-text">
+          <strong>支付接口集成</strong> — Stripe（UK/HK）、微信支付/支付宝（CN）三大市场支付方案
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-phase">中优先级</div>
+        <div class="timeline-text">
+          <strong>自动抓取 + 上架脚本</strong> — Depop / Vestiaire Collective / 小红书数据抓取与 CLOTH 平台自动上传
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-phase">中优先级</div>
+        <div class="timeline-text">
+          <strong>商品认证流程</strong> — 与第三方奢侈品鉴定机构集成，提供实物认证服务
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-phase">低优先级</div>
+        <div class="timeline-text">
+          <strong>AI 定价建议</strong> — 基于市场数据与历史成交价的智能定价引擎
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-phase">低优先级</div>
+        <div class="timeline-text">
+          <strong>个性化推荐系统</strong> — 用户行为驱动的商品推荐与智能匹配
+        </div>
+      </div>
+    </div>
+
+    <br>
+
+    <ul class="next-list">
+      <li>
+        <span class="next-priority">01</span>
+        <span>将内存存储（store.ts）迁移至 SQLite / PostgreSQL，实现生产级数据持久化</span>
+      </li>
+      <li>
+        <span class="next-priority">02</span>
+        <span>实现用户注册/登录系统（JWT），将愿望清单从 localStorage 迁移至用户账户</span>
+      </li>
+      <li>
+        <span class="next-priority">03</span>
+        <span>集成 Stripe 支付（UK/HK）及微信/支付宝（CN），完成支付闭环</span>
+      </li>
+      <li>
+        <span class="next-priority">04</span>
+        <span>上线自动抓取脚本，将 Depop / Vestiaire Collective / 小红书商品数据导入平台</span>
+      </li>
+      <li>
+        <span class="next-priority">05</span>
+        <span>接入第三方奢侈品鉴定机构，提供实物认证与鉴定证书</span>
+      </li>
+      <li>
+        <span class="next-priority">06</span>
+        <span>构建 AI 定价建议模块与个性化推荐系统，提升用户活跃度与转化率</span>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Footer -->
+  <div class="doc-footer">
+    <span>CLOTH 奢侈品交易平台 · 工作会话报告</span>
+    <span>2026年5月23日</span>
+    <span>内部文件 · CONFIDENTIAL</span>
+  </div>
+
+</div>
+
+</body>
+</html>

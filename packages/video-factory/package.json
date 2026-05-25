@@ -1,0 +1,9 @@
+{
+  "name": "@luxury/video-factory",
+  "version": "0.1.0",
+  "description": "Product video pack generator for CLOTH — proof clips, AI host scripts, short videos",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

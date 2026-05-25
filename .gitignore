@@ -10,5 +10,10 @@ docs/ppt/*.pptx
 coverage/
 .cache/
 tmp/
+api/data/
+*.tsbuildinfo
+*.tsbuildinfo.*
+vite.config.js
+vite.config.d.ts
 __pycache__/
 *.pyc

@@ -1,0 +1,9 @@
+{
+  "name": "@luxury/community-growth",
+  "version": "0.1.0",
+  "description": "Community engagement, KOC, and VIP group task planner for CLOTH",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

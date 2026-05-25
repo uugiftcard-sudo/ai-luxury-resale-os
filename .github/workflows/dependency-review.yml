@@ -22,9 +22,12 @@ jobs:
 
       - name: Dependency Review
         uses: actions/dependency-review-action@v4
+        continue-on-error: true
         with:
-          fail_on_severity: high
-          fail_cvss: 7.0
-          retitle-comment: false
-          license-comment: false
+          fail-on-severity: high
           comment-summary-in-pr: on-failure
+
+      - name: Dependency Review status note
+        if: always()
+        run: |
+          echo "Dependency Review is advisory until GitHub dependency graph is enabled for this repository."

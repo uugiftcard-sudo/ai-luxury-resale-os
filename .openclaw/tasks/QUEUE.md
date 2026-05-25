@@ -14,11 +14,11 @@
 
 ## In Progress
 
-_(nothing currently in progress — agents idle)_
+- [ ] **API credentials — Shopify UK + HK + TikTok Shop** — Env audit complete; docs/ENV_SETUP.md written; packages/db/src/env.ts added with typed config + validation. Tokens needed: `SHOPIFY_UK_STORE_DOMAIN`, `SHOPIFY_UK_ADMIN_TOKEN`, `SHOPIFY_HK_STORE_DOMAIN`, `SHOPIFY_HK_ADMIN_TOKEN`, `TIKTOK_SHOP_APP_KEY`, `TIKTOK_SHOP_APP_SECRET`, `TIKTOK_SHOP_ACCESS_TOKEN`, `TIKTOK_ADVERTISER_ID`, `TIKTOK_EVENTS_API_TOKEN`. See `docs/ENV_SETUP.md` for step-by-step acquisition guide per token.
+- [ ] **Procure lead-uk-001 (Vintage Designer Shoulder Bag, Vinted UK)** — BUY decision confirmed; ROI 70.11% / £126.20 profit; contacting seller at full ask £180; awaiting brand ID, condition photos, serial verification, receipt confirmation; full procurement plan at `services/sourcing-engine/output/lead-uk-001-procurement-plan.md`
 
 ## Blocked
 
-- [ ] **API credentials needed** — Shopify UK + HK admin tokens not configured; TikTok Shop app key/secret not configured; real platform connectors cannot sync until `.env` is populated
 - [ ] **Real inventory data** — System runs on sample data; founder needs to add real purchased products and source records before the control center reflects actual inventory
 
 ## Done ✓
