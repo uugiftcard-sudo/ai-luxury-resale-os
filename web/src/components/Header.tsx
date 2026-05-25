@@ -80,6 +80,26 @@ export default function Header() {
   const [marketOpen, setMarketOpen] = useState(false);
   const marketRef = useRef<HTMLDivElement>(null);
 
+  // ── Body scroll lock ───────────────────────────────────────────
+  useEffect(() => {
+    if (menuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [menuOpen]);
+
+  // ── Mobile nav: Escape key + backdrop click ───────────────────
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setMenuOpen(false);
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [menuOpen]);
+
   // Close market dropdown on outside click or Escape
   useEffect(() => {
     if (!marketOpen) return;
@@ -98,6 +118,9 @@ export default function Header() {
       document.removeEventListener('mousedown', onClickOutside);
     };
   }, [marketOpen]);
+
+  // Close mobile nav on route click
+  function closeMenu() { setMenuOpen(false); }
 
   const t = NAV_COPY[market] ?? NAV_COPY.CN;
   const currentMarket = MARKET_OPTIONS.find(m => m.value === market)!;
@@ -131,6 +154,7 @@ export default function Header() {
     const opt = MARKET_OPTIONS.find(o => o.value === m)!;
     setMarket(m);
     setMarketOpen(false);
+    setMenuOpen(false);
     navigate(opt.url);
   }
 
@@ -226,29 +250,64 @@ export default function Header() {
         </form>
 
         {/* ── Nav ────────────────────────────────────────────────────── */}
+        {menuOpen && (
+          <button
+            type="button"
+            className={styles.mobileBackdrop}
+            onClick={() => setMenuOpen(false)}
+            aria-label="關閉選單背景"
+          />
+        )}
         <nav
           className={`${styles.nav} ${menuOpen ? styles.navOpen : ''}`}
           id="mobile-nav"
           aria-label="Main navigation"
         >
-          {CATEGORY_LINKS[market].map(cat => (
-            <Link
-              key={cat.label}
-              to={cat.param ? marketPath(`/products?category=${encodeURIComponent(cat.param)}`) : marketPath('/products')}
+          {/* Mobile nav header */}
+          <div className={styles.navHeader}>
+            <span className={styles.navTitle}>功能目錄</span>
+            <button
+              className={styles.navClose}
               onClick={() => setMenuOpen(false)}
+              aria-label="關閉選單"
+              type="button"
             >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+
+          {/* Core nav */}
+          <Link to={currentMarket.url} onClick={closeMenu} className={styles.mobileNavOnly}>
+            {market === 'UK' ? 'Home' : '首頁'}
+          </Link>
+          <Link to={marketPath('/products')} onClick={closeMenu} className={styles.mobileNavOnly}>
+            {market === 'UK' ? 'Products' : '全部商品'}
+          </Link>
+          {CATEGORY_LINKS[market].map(cat => (
+            (cat.param || !menuOpen) && (
+            <Link key={cat.label} to={cat.param ? marketPath(`/products?category=${encodeURIComponent(cat.param)}`) : marketPath('/products')} onClick={closeMenu}>
               {cat.label}
             </Link>
+            )
           ))}
-          <Link to={marketPath('/orders')} onClick={() => setMenuOpen(false)}>{t.orders}</Link>
-          <Link to={marketPath('/wishlist')} onClick={() => setMenuOpen(false)}>
-            {market === 'UK' ? 'Wishlist' : '心願清單'}
-            {wishlistCount > 0 && <span style={{ marginLeft: 6, background: 'var(--color-accent)', color: '#fff', borderRadius: 10, padding: '1px 8px', fontSize: '0.72rem', fontWeight: 700 }}>{wishlistCount}</span>}
+          <Link to={marketPath('/orders')} onClick={closeMenu}>{t.orders}</Link>
+          <Link to={marketPath('/cart')} onClick={closeMenu}>
+            {t.cart}
+            {totalItems > 0 && <span className={styles.navCartBadge}>{totalItems}</span>}
           </Link>
-          <Link to={marketPath('/support')} onClick={() => setMenuOpen(false)}>{t.support}</Link>
-          <Link to={marketPath('/inventory')} onClick={() => setMenuOpen(false)}>{t.inventory}</Link>
-          <Link to={marketPath('/finance')} onClick={() => setMenuOpen(false)}>{t.finance}</Link>
-          <Link to={marketPath('/admin')} onClick={() => setMenuOpen(false)} className={styles.adminLink}>{t.admin}</Link>
+          <Link to={marketPath('/wishlist')} onClick={closeMenu}>
+            {market === 'UK' ? 'Wishlist' : '心願清單'}
+            {wishlistCount > 0 && <span className={styles.navCartBadge}>{wishlistCount}</span>}
+          </Link>
+          <Link to={marketPath('/support')} onClick={closeMenu}>{t.support}</Link>
+
+          {/* Admin / ops section */}
+          <span className={styles.navSectionLabel}>後台管理</span>
+          <Link to={marketPath('/admin')} onClick={closeMenu} className={styles.adminLink}>{t.admin}</Link>
+          <Link to={marketPath('/inventory')} onClick={closeMenu}>{t.inventory}</Link>
+          <Link to={marketPath('/finance')} onClick={closeMenu}>{t.finance}</Link>
         </nav>
 
         {/* ── Mobile Search Bar ─────────────────────────────────────── */}

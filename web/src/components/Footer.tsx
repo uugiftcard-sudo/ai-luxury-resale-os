@@ -164,9 +164,9 @@ export default function Footer() {
               <h4>{t.aboutTitle}</h4>
               {t.about.map(item => (
                 item.href.startsWith('/') ? (
-                  <Link key={item.href} to={item.href}>{item.label}</Link>
+                  <Link key={`${item.label}-${item.href}`} to={item.href}>{item.label}</Link>
                 ) : (
-                  <a key={item.href} href={item.href}>{item.label}</a>
+                  <a key={`${item.label}-${item.href}`} href={item.href}>{item.label}</a>
                 )
               ))}
             </div>
