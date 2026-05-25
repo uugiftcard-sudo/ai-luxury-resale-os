@@ -4,15 +4,20 @@
  */
 import { Router, Request, Response } from 'express';
 import {
-  products as allProducts, // aliased intentionally for readability in this file
   findProductById,
   generateId,
   filterProductsByMarket,
+  saveProduct,
+  updateProduct,
 } from '../models/store';
-import { Product, ProductFilter, ProductStatus } from '../models/types';
+import { MarketScope, Product, ProductFilter, ProductStatus } from '../models/types';
 import { ok, notFound, serverError, validateRequired } from '../middleware/response';
 
 const router = Router();
+
+function normalizeMarket(value: unknown): MarketScope {
+  return value === 'UK' || value === 'HK' || value === 'CN' || value === 'ALL' ? value : 'ALL';
+}
 
 /**
  * GET /api/products
@@ -125,10 +130,10 @@ router.post('/', (req: Request, res: Response) => {
       platform: body.platform,
       status: body.status || '待售',
       createdAt: new Date().toISOString(),
+      market: normalizeMarket(body.market),
     };
 
-    allProducts.unshift(newProduct);
-    ok(res, newProduct, '商品上架成功');
+    ok(res, saveProduct(newProduct), '商品上架成功');
   } catch (err) {
     serverError(res, err);
   }
@@ -140,22 +145,22 @@ router.post('/', (req: Request, res: Response) => {
  */
 router.put('/:id', (req: Request, res: Response) => {
   try {
-    const idx = allProducts.findIndex(p => p.id === req.params.id);
-    if (idx === -1) {
+    const existing = findProductById(req.params.id);
+    if (!existing) {
       notFound(res, '商品');
       return;
     }
 
     const updated: Product = {
-      ...allProducts[idx],
+      ...existing,
       ...req.body,
-      id: allProducts[idx].id,
-      createdAt: allProducts[idx].createdAt,
+      id: existing.id,
+      createdAt: existing.createdAt,
+      market: normalizeMarket(req.body.market ?? existing.market),
       updatedAt: new Date().toISOString(),
     };
 
-    allProducts[idx] = updated;
-    ok(res, updated, '商品更新成功');
+    ok(res, saveProduct(updated), '商品更新成功');
   } catch (err) {
     serverError(res, err);
   }
@@ -167,19 +172,16 @@ router.put('/:id', (req: Request, res: Response) => {
  */
 router.delete('/:id', (req: Request, res: Response) => {
   try {
-    const idx = allProducts.findIndex(p => p.id === req.params.id);
-    if (idx === -1) {
+    const updated = updateProduct(req.params.id, {
+      status: '已下架',
+      updatedAt: new Date().toISOString(),
+    });
+    if (!updated) {
       notFound(res, '商品');
       return;
     }
 
-    allProducts[idx] = {
-      ...allProducts[idx],
-      status: '已下架',
-      updatedAt: new Date().toISOString(),
-    };
-
-    ok(res, allProducts[idx], '商品已下架');
+    ok(res, updated, '商品已下架');
   } catch (err) {
     serverError(res, err);
   }

@@ -4,25 +4,13 @@
  */
 import { Router, Request, Response } from 'express';
 import { ok, notFound, serverError, validateRequired } from '../middleware/response';
-import type { FinanceType, FinanceCategory } from '../models/types';
+import { generateId } from '../models/store';
+import { createSqliteCollection } from '../db';
+import type { FinanceRecord, FinanceType, FinanceCategory } from '../models/types';
 
 const router = Router();
 
-// In-memory store (same pattern as products/orders — swap to SQLite in Phase 1)
-interface FinanceRecord {
-  id: string;
-  type: FinanceType;
-  category: FinanceCategory;
-  amount: number;
-  description: string;
-  date: string;
-  market?: string;
-  relatedOrderId?: string;
-  createdAt: string;
-  updatedAt?: string;
-}
-
-const financeRecords: FinanceRecord[] = [
+const seedFinanceRecords: FinanceRecord[] = [
   // Seed data
   {
     id: 'f001',
@@ -80,10 +68,12 @@ const financeRecords: FinanceRecord[] = [
   },
 ];
 
-let idCounter = 6;
-function generateId(): string {
-  return `f${String(idCounter++).padStart(3, '0')}`;
-}
+const financeRecords = createSqliteCollection<FinanceRecord>(
+  'finance_records',
+  'id',
+  (record) => record.id,
+  seedFinanceRecords
+);
 
 function isValidType(v: unknown): v is FinanceType {
   return v === '收入' || v === '支出';
@@ -103,7 +93,7 @@ router.get('/', (req: Request, res: Response) => {
   try {
     const { type, category, from, to, market } = req.query;
 
-    let filtered = [...financeRecords];
+    let filtered = financeRecords.findAll();
 
     if (type && isValidType(type)) {
       filtered = filtered.filter(r => r.type === type);
@@ -134,7 +124,7 @@ router.get('/', (req: Request, res: Response) => {
 router.get('/stats', (req: Request, res: Response) => {
   try {
     const { market } = req.query;
-    let records = [...financeRecords];
+    let records = financeRecords.findAll();
 
     if (market && market !== 'ALL') {
       records = records.filter(r => !r.market || r.market === 'ALL' || r.market === market);
@@ -209,7 +199,7 @@ router.post('/', (req: Request, res: Response) => {
     }
 
     const newRecord: FinanceRecord = {
-      id: generateId(),
+      id: generateId('f'),
       type: body.type,
       category: body.category,
       amount: Number(body.amount) || 0,
@@ -220,8 +210,7 @@ router.post('/', (req: Request, res: Response) => {
       createdAt: new Date().toISOString(),
     };
 
-    financeRecords.push(newRecord);
-    ok(res, newRecord, '财务记录已添加');
+    ok(res, financeRecords.upsert(newRecord), '财务记录已添加');
   } catch (err) {
     serverError(res, err);
   }
@@ -230,18 +219,18 @@ router.post('/', (req: Request, res: Response) => {
 // ── PUT /api/finance/:id ─────────────────────────────────────────────────────
 router.put('/:id', (req: Request, res: Response) => {
   try {
-    const idx = financeRecords.findIndex(r => r.id === req.params.id);
-    if (idx === -1) {
+    const existing = financeRecords.find(r => r.id === req.params.id);
+    if (!existing) {
       notFound(res, '财务记录');
       return;
     }
 
     const body = req.body as Partial<FinanceRecord>;
     const updated: FinanceRecord = {
-      ...financeRecords[idx],
+      ...existing,
       ...body,
-      id: financeRecords[idx].id,
-      createdAt: financeRecords[idx].createdAt,
+      id: existing.id,
+      createdAt: existing.createdAt,
       updatedAt: new Date().toISOString(),
     };
 
@@ -254,8 +243,7 @@ router.put('/:id', (req: Request, res: Response) => {
       return;
     }
 
-    financeRecords[idx] = updated;
-    ok(res, updated, '财务记录已更新');
+    ok(res, financeRecords.upsert(updated), '财务记录已更新');
   } catch (err) {
     serverError(res, err);
   }
@@ -264,13 +252,13 @@ router.put('/:id', (req: Request, res: Response) => {
 // ── DELETE /api/finance/:id ─────────────────────────────────────────────────
 router.delete('/:id', (req: Request, res: Response) => {
   try {
-    const idx = financeRecords.findIndex(r => r.id === req.params.id);
-    if (idx === -1) {
+    const existing = financeRecords.find(r => r.id === req.params.id);
+    if (!existing) {
       notFound(res, '财务记录');
       return;
     }
-    const deleted = financeRecords.splice(idx, 1)[0];
-    ok(res, deleted, '财务记录已删除');
+    financeRecords.remove(r => r.id === req.params.id);
+    ok(res, existing, '财务记录已删除');
   } catch (err) {
     serverError(res, err);
   }

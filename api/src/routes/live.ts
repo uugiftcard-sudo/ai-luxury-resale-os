@@ -6,7 +6,7 @@
  * viewers, fake comments, or undisclosed human impersonation.
  */
 import { Router, Request, Response } from 'express';
-import { products } from '../models/store';
+import { listProducts } from '../models/store';
 import type { LiveAccountStyle, LiveSellingPlan, Product } from '../models/types';
 import { ok, serverError } from '../middleware/response';
 
@@ -15,6 +15,7 @@ const router = Router();
 const VALID_STYLES: LiveAccountStyle[] = ['educational', 'luxury_editor', 'deal_hunter', 'community_host'];
 
 function chooseProduct(productId?: string): Product {
+  const products = listProducts();
   const exact = productId ? products.find(p => p.id === productId) : undefined;
   return exact || products.find(p => p.status === '待售') || products[0];
 }
@@ -98,6 +99,7 @@ function buildPlan(req: Request): LiveSellingPlan {
 
 router.get('/readiness', (_req: Request, res: Response) => {
   try {
+    const products = listProducts();
     const sellable = products.filter(p => p.status === '待售');
     ok(res, {
       ready: sellable.length > 0,

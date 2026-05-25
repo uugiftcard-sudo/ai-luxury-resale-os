@@ -4,10 +4,13 @@
  */
 import { Router, Request, Response } from 'express';
 import {
-  orders,
   findOrderById,
   findProductById,
   generateId,
+  listOrders,
+  saveOrder,
+  updateOrderStatus,
+  updateProduct,
 } from '../models/store';
 import { Order } from '../models/types';
 import { ok, notFound, serverError } from '../middleware/response';
@@ -21,7 +24,7 @@ const router = Router();
 router.get('/', (req: Request, res: Response) => {
   try {
     const { status, page = '1', limit = '20' } = req.query;
-    let filtered = [...orders];
+    let filtered = listOrders();
 
     if (status) {
       filtered = filtered.filter(o => o.status === status);
@@ -114,11 +117,9 @@ router.post('/', (req: Request, res: Response) => {
       createdAt: new Date().toISOString(),
     };
 
-    // 同步修改商品状态为已售
-    product.status = '已售';
-
-    orders.unshift(newOrder);
-    ok(res, { ...newOrder, product }, '订单创建成功，请完成付款');
+    const savedOrder = saveOrder(newOrder);
+    const updatedProduct = updateProduct(product.id, { status: '已售' }) || product;
+    ok(res, { ...savedOrder, product: updatedProduct }, '订单创建成功，请完成付款');
   } catch (err) {
     serverError(res, err);
   }
@@ -130,8 +131,8 @@ router.post('/', (req: Request, res: Response) => {
  */
 router.put('/:id', (req: Request, res: Response) => {
   try {
-    const idx = orders.findIndex(o => o.id === req.params.id);
-    if (idx === -1) {
+    const existing = findOrderById(req.params.id);
+    if (!existing) {
       notFound(res, '订单');
       return;
     }
@@ -146,20 +147,15 @@ router.put('/:id', (req: Request, res: Response) => {
       return;
     }
 
-    const updated: Order = {
-      ...orders[idx],
-      status,
-      updatedAt: new Date().toISOString(),
-    };
-
-    orders[idx] = updated;
+    const updated = updateOrderStatus(existing.id, status);
+    if (!updated) {
+      notFound(res, '订单');
+      return;
+    }
 
     // 如果取消订单，恢复商品状态为待售
     if (status === '已取消') {
-      const product = findProductById(updated.productId);
-      if (product) {
-        product.status = '待售';
-      }
+      updateProduct(updated.productId, { status: '待售' });
     }
 
     ok(res, updated, `订单状态已更新为: ${status}`);

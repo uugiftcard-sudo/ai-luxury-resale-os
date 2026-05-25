@@ -4,6 +4,8 @@
  */
 import { Router, Request, Response } from 'express';
 import { ok, notFound, serverError } from '../middleware/response';
+import { createSqliteCollection } from '../db';
+import { generateId } from '../models/store';
 
 const router = Router();
 
@@ -46,7 +48,7 @@ interface SupportFAQ {
   orderIndex: number;
 }
 
-const tickets: SupportTicket[] = [
+const seedTickets: SupportTicket[] = [
   {
     id: 'st001',
     ticketNo: 'TKT-2024-001',
@@ -91,7 +93,7 @@ const tickets: SupportTicket[] = [
   },
 ];
 
-const messages: SupportMessage[] = [
+const seedMessages: SupportMessage[] = [
   {
     id: 'sm001',
     ticketId: 'st001',
@@ -118,7 +120,7 @@ const messages: SupportMessage[] = [
   },
 ];
 
-const faqs: SupportFAQ[] = [
+const seedFaqs: SupportFAQ[] = [
   {
     id: 'faq001',
     question: '二手奢侈品成色如何定义？',
@@ -163,19 +165,36 @@ const faqs: SupportFAQ[] = [
   },
 ];
 
-let ticketIdCounter = 4;
-let msgIdCounter = 10;
-let faqIdCounter = 10;
+const tickets = createSqliteCollection<SupportTicket>(
+  'support_tickets',
+  'id',
+  (ticket) => ticket.id,
+  seedTickets
+);
 
-function generateTicketId(): string { return `st${String(ticketIdCounter++).padStart(3, '0')}`; }
-function generateTicketNo(): string { return `TKT-2024-${String(ticketIdCounter).padStart(3, '0')}`; }
-function generateMsgId(): string { return `sm${String(msgIdCounter++).padStart(3, '0')}`; }
+const messages = createSqliteCollection<SupportMessage>(
+  'support_messages',
+  'id',
+  (message) => message.id,
+  seedMessages
+);
+
+const faqs = createSqliteCollection<SupportFAQ>(
+  'support_faqs',
+  'id',
+  (faq) => faq.id,
+  seedFaqs
+);
+
+function generateTicketNo(): string {
+  return `TKT-${new Date().getFullYear()}-${Date.now().toString(36).toUpperCase()}`;
+}
 
 // ── GET /api/support/tickets ───────────────────────────────────────────────
 router.get('/tickets', (req: Request, res: Response) => {
   try {
     const { status, type, priority, search } = req.query;
-    let filtered = [...tickets];
+    let filtered = tickets.findAll();
     if (status && ['open', 'in_progress', 'resolved', 'closed'].includes(status as string)) {
       filtered = filtered.filter(t => t.status === status);
     }
@@ -206,7 +225,7 @@ router.get('/tickets/:id', (req: Request, res: Response) => {
   try {
     const ticket = tickets.find(t => t.id === req.params.id || t.ticketNo === req.params.id);
     if (!ticket) { notFound(res, '工单'); return; }
-    const ticketMessages = messages.filter(m => m.ticketId === ticket.id);
+    const ticketMessages = messages.findMany(m => m.ticketId === ticket.id);
     ok(res, { ...ticket, messages: ticketMessages });
   } catch (err) {
     serverError(res, err);
@@ -222,7 +241,7 @@ router.post('/tickets', (req: Request, res: Response) => {
       return;
     }
     const newTicket: SupportTicket = {
-      id: generateTicketId(),
+      id: generateId('st'),
       ticketNo: generateTicketNo(),
       type: body.type || 'inquiry',
       status: 'open',
@@ -235,8 +254,7 @@ router.post('/tickets', (req: Request, res: Response) => {
       customerPhone: body.customerPhone,
       createdAt: new Date().toISOString(),
     };
-    tickets.push(newTicket);
-    ok(res, newTicket, '工单已创建');
+    ok(res, tickets.upsert(newTicket), '工单已创建');
   } catch (err) {
     serverError(res, err);
   }
@@ -245,18 +263,17 @@ router.post('/tickets', (req: Request, res: Response) => {
 // ── PUT /api/support/tickets/:id ──────────────────────────────────────────
 router.put('/tickets/:id', (req: Request, res: Response) => {
   try {
-    const idx = tickets.findIndex(t => t.id === req.params.id);
-    if (idx === -1) { notFound(res, '工单'); return; }
+    const existing = tickets.find(t => t.id === req.params.id);
+    if (!existing) { notFound(res, '工单'); return; }
     const updated: SupportTicket = {
-      ...tickets[idx],
+      ...existing,
       ...req.body,
-      id: tickets[idx].id,
-      ticketNo: tickets[idx].ticketNo,
-      createdAt: tickets[idx].createdAt,
+      id: existing.id,
+      ticketNo: existing.ticketNo,
+      createdAt: existing.createdAt,
       updatedAt: new Date().toISOString(),
     };
-    tickets[idx] = updated;
-    ok(res, updated, '工单已更新');
+    ok(res, tickets.upsert(updated), '工单已更新');
   } catch (err) {
     serverError(res, err);
   }
@@ -267,7 +284,7 @@ router.get('/tickets/:id/messages', (req: Request, res: Response) => {
   try {
     const ticket = tickets.find(t => t.id === req.params.id);
     if (!ticket) { notFound(res, '工单'); return; }
-    const ticketMessages = messages.filter(m => m.ticketId === ticket.id);
+    const ticketMessages = messages.findMany(m => m.ticketId === ticket.id);
     ok(res, ticketMessages);
   } catch (err) {
     serverError(res, err);
@@ -289,20 +306,23 @@ router.post('/tickets/:id/messages', (req: Request, res: Response) => {
       return;
     }
     const newMsg: SupportMessage = {
-      id: generateMsgId(),
+      id: generateId('sm'),
       ticketId: ticket.id,
       author: body.author as MessageAuthor,
       authorName: body.authorName,
       message: body.message,
       createdAt: new Date().toISOString(),
     };
-    messages.push(newMsg);
+    messages.upsert(newMsg);
 
     // Update ticket status if agent replies
     if (body.author === 'agent') {
-      ticket.status = 'in_progress';
-      ticket.adminReply = body.message;
-      ticket.updatedAt = new Date().toISOString();
+      tickets.upsert({
+        ...ticket,
+        status: 'in_progress',
+        adminReply: body.message,
+        updatedAt: new Date().toISOString(),
+      });
     }
 
     ok(res, newMsg, '消息已发送');
@@ -315,7 +335,7 @@ router.post('/tickets/:id/messages', (req: Request, res: Response) => {
 router.get('/faqs', (req: Request, res: Response) => {
   try {
     const { category } = req.query;
-    let filtered = [...faqs];
+    let filtered = faqs.findAll();
     if (category) filtered = filtered.filter(f => f.category === category);
     filtered.sort((a, b) => a.orderIndex - b.orderIndex);
     ok(res, filtered);
@@ -333,14 +353,13 @@ router.post('/faqs', (req: Request, res: Response) => {
       return;
     }
     const newFaq: SupportFAQ = {
-      id: `faq${String(faqIdCounter++).padStart(3, '0')}`,
+      id: generateId('faq'),
       question: body.question,
       answer: body.answer,
       category: body.category || '一般',
-      orderIndex: body.orderIndex || faqs.length + 1,
+      orderIndex: body.orderIndex || faqs.count() + 1,
     };
-    faqs.push(newFaq);
-    ok(res, newFaq, 'FAQ 已添加');
+    ok(res, faqs.upsert(newFaq), 'FAQ 已添加');
   } catch (err) {
     serverError(res, err);
   }

@@ -4,6 +4,8 @@
  */
 import { Router, Request, Response } from 'express';
 import { ok, notFound, serverError } from '../middleware/response';
+import { createSqliteCollection } from '../db';
+import { generateId } from '../models/store';
 
 const router = Router();
 
@@ -44,8 +46,7 @@ interface InventoryTransaction {
   createdAt: string;
 }
 
-// In-memory stores
-const items: InventoryItem[] = [
+const seedInventoryItems: InventoryItem[] = [
   {
     id: 'inv001',
     sku: 'GUCCI-MARMONT-001',
@@ -138,16 +139,18 @@ const items: InventoryItem[] = [
   },
 ];
 
-const transactions: InventoryTransaction[] = [];
-let itemIdCounter = 6;
-let txIdCounter = 1;
+const items = createSqliteCollection<InventoryItem>(
+  'inventory_items',
+  'id',
+  (item) => item.id,
+  seedInventoryItems
+);
 
-function generateItemId(): string {
-  return `inv${String(itemIdCounter++).padStart(3, '0')}`;
-}
-function generateTxId(): string {
-  return `tx${String(txIdCounter++).padStart(4, '0')}`;
-}
+const transactions = createSqliteCollection<InventoryTransaction>(
+  'inventory_transactions',
+  'id',
+  (transaction) => transaction.id
+);
 
 function getStatus(item: InventoryItem): StockStatus {
   if (item.currentStock === 0) return 'out_of_stock';
@@ -158,7 +161,7 @@ function getStatus(item: InventoryItem): StockStatus {
 // ── GET /api/inventory ────────────────────────────────────────────────────────
 router.get('/', (_req: Request, res: Response) => {
   try {
-    const withStatus = items.map(item => ({ ...item, status: getStatus(item) }));
+    const withStatus = items.findAll().map(item => ({ ...item, status: getStatus(item) }));
     ok(res, withStatus);
   } catch (err) {
     serverError(res, err);
@@ -168,11 +171,12 @@ router.get('/', (_req: Request, res: Response) => {
 // ── GET /api/inventory/stats ─────────────────────────────────────────────────
 router.get('/stats', (_req: Request, res: Response) => {
   try {
-    const totalSKUs = items.length;
-    const totalStock = items.reduce((sum, i) => sum + i.currentStock, 0);
-    const lowStockCount = items.filter(i => i.currentStock > 0 && i.currentStock <= i.minStockThreshold).length;
-    const outOfStockCount = items.filter(i => i.currentStock === 0).length;
-    const totalValue = items.reduce((sum, i) => sum + i.currentStock * (i.unitCost || 0), 0);
+    const allItems = items.findAll();
+    const totalSKUs = allItems.length;
+    const totalStock = allItems.reduce((sum, i) => sum + i.currentStock, 0);
+    const lowStockCount = allItems.filter(i => i.currentStock > 0 && i.currentStock <= i.minStockThreshold).length;
+    const outOfStockCount = allItems.filter(i => i.currentStock === 0).length;
+    const totalValue = allItems.reduce((sum, i) => sum + i.currentStock * (i.unitCost || 0), 0);
     ok(res, { totalSKUs, totalStock, lowStockCount, outOfStockCount, totalValue });
   } catch (err) {
     serverError(res, err);
@@ -182,7 +186,7 @@ router.get('/stats', (_req: Request, res: Response) => {
 // ── GET /api/inventory/alerts ────────────────────────────────────────────────
 router.get('/alerts', (_req: Request, res: Response) => {
   try {
-    const alerts = items
+    const alerts = items.findAll()
       .filter(i => i.currentStock <= i.minStockThreshold)
       .map(i => ({ ...i, status: getStatus(i) }));
     ok(res, alerts);
@@ -195,7 +199,7 @@ router.get('/alerts', (_req: Request, res: Response) => {
 router.get('/transactions', (req: Request, res: Response) => {
   try {
     const { inventoryId, from, to, type } = req.query;
-    let filtered = [...transactions];
+    let filtered = transactions.findAll();
     if (inventoryId) filtered = filtered.filter(t => t.inventoryId === inventoryId);
     if (type && (type === 'inbound' || type === 'outbound')) {
       filtered = filtered.filter(t => t.type === type);
@@ -229,7 +233,7 @@ router.post('/', (req: Request, res: Response) => {
       return;
     }
     const newItem: InventoryItem = {
-      id: generateItemId(),
+      id: generateId('inv'),
       sku: body.sku,
       productId: body.productId,
       productName: body.productName,
@@ -247,8 +251,8 @@ router.post('/', (req: Request, res: Response) => {
       notes: body.notes,
       createdAt: new Date().toISOString(),
     };
-    items.push(newItem);
-    ok(res, { ...newItem, status: getStatus(newItem) }, '库存商品已添加');
+    const saved = items.upsert(newItem);
+    ok(res, { ...saved, status: getStatus(saved) }, '库存商品已添加');
   } catch (err) {
     serverError(res, err);
   }
@@ -257,17 +261,17 @@ router.post('/', (req: Request, res: Response) => {
 // ── PUT /api/inventory/:id ──────────────────────────────────────────────────
 router.put('/:id', (req: Request, res: Response) => {
   try {
-    const idx = items.findIndex(i => i.id === req.params.id);
-    if (idx === -1) { notFound(res, '库存商品'); return; }
+    const existing = items.find(i => i.id === req.params.id);
+    if (!existing) { notFound(res, '库存商品'); return; }
     const updated: InventoryItem = {
-      ...items[idx],
+      ...existing,
       ...req.body,
-      id: items[idx].id,
-      createdAt: items[idx].createdAt,
+      id: existing.id,
+      createdAt: existing.createdAt,
       updatedAt: new Date().toISOString(),
     };
-    items[idx] = updated;
-    ok(res, { ...updated, status: getStatus(updated) }, '库存商品已更新');
+    const saved = items.upsert(updated);
+    ok(res, { ...saved, status: getStatus(saved) }, '库存商品已更新');
   } catch (err) {
     serverError(res, err);
   }
@@ -276,10 +280,10 @@ router.put('/:id', (req: Request, res: Response) => {
 // ── DELETE /api/inventory/:id ───────────────────────────────────────────────
 router.delete('/:id', (req: Request, res: Response) => {
   try {
-    const idx = items.findIndex(i => i.id === req.params.id);
-    if (idx === -1) { notFound(res, '库存商品'); return; }
-    const deleted = items.splice(idx, 1)[0];
-    ok(res, deleted, '库存商品已删除');
+    const existing = items.find(i => i.id === req.params.id);
+    if (!existing) { notFound(res, '库存商品'); return; }
+    items.remove(i => i.id === req.params.id);
+    ok(res, existing, '库存商品已删除');
   } catch (err) {
     serverError(res, err);
   }
@@ -296,14 +300,17 @@ router.post('/:id/inbound', (req: Request, res: Response) => {
       return;
     }
 
-    item.currentStock += body.quantity;
-    item.updatedAt = new Date().toISOString();
+    const updatedItem: InventoryItem = {
+      ...item,
+      currentStock: item.currentStock + body.quantity,
+      updatedAt: new Date().toISOString(),
+    };
 
     const tx: InventoryTransaction = {
-      id: generateTxId(),
-      inventoryId: item.id,
-      sku: item.sku,
-      productName: item.productName,
+      id: generateId('tx'),
+      inventoryId: updatedItem.id,
+      sku: updatedItem.sku,
+      productName: updatedItem.productName,
       type: 'inbound',
       quantity: body.quantity,
       referenceNo: body.referenceNo,
@@ -311,10 +318,11 @@ router.post('/:id/inbound', (req: Request, res: Response) => {
       operator: body.operator,
       createdAt: new Date().toISOString(),
     };
-    transactions.push(tx);
+    items.upsert(updatedItem);
+    transactions.upsert(tx);
 
     ok(res, {
-      item: { ...item, status: getStatus(item) },
+      item: { ...updatedItem, status: getStatus(updatedItem) },
       transaction: tx,
     }, '入库成功');
   } catch (err) {
@@ -337,14 +345,17 @@ router.post('/:id/outbound', (req: Request, res: Response) => {
       return;
     }
 
-    item.currentStock -= body.quantity;
-    item.updatedAt = new Date().toISOString();
+    const updatedItem: InventoryItem = {
+      ...item,
+      currentStock: item.currentStock - body.quantity,
+      updatedAt: new Date().toISOString(),
+    };
 
     const tx: InventoryTransaction = {
-      id: generateTxId(),
-      inventoryId: item.id,
-      sku: item.sku,
-      productName: item.productName,
+      id: generateId('tx'),
+      inventoryId: updatedItem.id,
+      sku: updatedItem.sku,
+      productName: updatedItem.productName,
       type: 'outbound',
       quantity: -body.quantity,
       referenceNo: body.referenceNo,
@@ -352,10 +363,11 @@ router.post('/:id/outbound', (req: Request, res: Response) => {
       operator: body.operator,
       createdAt: new Date().toISOString(),
     };
-    transactions.push(tx);
+    items.upsert(updatedItem);
+    transactions.upsert(tx);
 
     ok(res, {
-      item: { ...item, status: getStatus(item) },
+      item: { ...updatedItem, status: getStatus(updatedItem) },
       transaction: tx,
     }, '出库成功');
   } catch (err) {

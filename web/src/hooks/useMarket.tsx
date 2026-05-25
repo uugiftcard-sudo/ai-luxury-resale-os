@@ -10,6 +10,7 @@ import {
   useCallback,
   ReactNode,
 } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Market, MARKET_CONFIGS, type MarketConfig } from '../types/market';
 
 interface MarketContextValue {
@@ -22,8 +23,17 @@ const MarketContext = createContext<MarketContextValue | null>(null);
 
 const STORAGE_KEY = 'cloth_market';
 
-/** Determine the initial market: check localStorage first, then the URL path. */
-function resolveInitialMarket(): Market {
+function marketFromPath(pathname: string): Market | null {
+  if (pathname === '/hk' || pathname.startsWith('/hk/')) return 'HK';
+  if (pathname === '/cn' || pathname.startsWith('/cn/')) return 'CN';
+  return null;
+}
+
+/** Determine the initial market: URL path wins, then localStorage. */
+function resolveInitialMarket(pathname: string): Market {
+  const pathMarket = marketFromPath(pathname);
+  if (pathMarket) return pathMarket;
+
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved && (saved === 'UK' || saved === 'HK' || saved === 'CN')) {
@@ -36,13 +46,16 @@ function resolveInitialMarket(): Market {
   return 'UK';
 }
 
-/** Derive the path prefix from a market (empty string for UK). */
-function marketPath(market: Market): string {
-  return MARKET_CONFIGS[market].path;
-}
-
 export function MarketProvider({ children }: { children: ReactNode }) {
-  const [market, setMarketState] = useState<Market>(resolveInitialMarket);
+  const location = useLocation();
+  const [market, setMarketState] = useState<Market>(() => resolveInitialMarket(location.pathname));
+
+  useEffect(() => {
+    const pathMarket = marketFromPath(location.pathname);
+    if (pathMarket && pathMarket !== market) {
+      setMarketState(pathMarket);
+    }
+  }, [location.pathname, market]);
 
   // Persist to localStorage whenever market changes
   useEffect(() => {
@@ -51,10 +64,6 @@ export function MarketProvider({ children }: { children: ReactNode }) {
     } catch {
       // ignore
     }
-    // Push history to reflect the new market path
-    const path = marketPath(market);
-    const newPath = path ? `/${path}` : '/';
-    window.history.replaceState(null, '', newPath);
   }, [market]);
 
   const setMarket = useCallback((m: Market) => {

@@ -15,7 +15,7 @@ import { useWishlist } from '../hooks/useWishlist';
 const MARKET_OPTIONS: { value: Market; flag: string; label: string; url: string }[] = [
   { value: 'UK', flag: '🇬🇧', label: 'United Kingdom', url: '/' },
   { value: 'HK', flag: '🇭🇰', label: 'Hong Kong', url: '/hk' },
-  { value: 'CN', flag: '🇨🇳', label: '中国', url: '/cn' },
+  { value: 'CN', flag: '🇨🇳', label: '中國', url: '/cn' },
 ];
 
 // ── Category config per market ───────────────────────────────────────────────
@@ -35,7 +35,7 @@ const CATEGORY_LINKS: Record<Market, { label: string; param: string }[]> = {
   CN: [
     { label: '全部商品', param: '' },
     { label: '包袋',     param: '包袋' },
-    { label: '服饰',     param: '服饰' },
+    { label: '服飾',     param: '服饰' },
     { label: '鞋履',     param: '鞋履' },
   ],
 };
@@ -59,13 +59,13 @@ const NAV_COPY: Record<Market, { orders: string; admin: string; search: string; 
     finance: '財務',
   },
   CN: {
-    orders: '我的订单',
+    orders: '我的訂單',
     admin: '管理',
-    search: '搜索品牌、商品...',
-    cart: '购物车',
+    search: '搜尋品牌、商品...',
+    cart: '購物車',
     support: '客服',
-    inventory: '仓库',
-    finance: '财务',
+    inventory: '倉庫',
+    finance: '財務',
   },
 };
 
@@ -79,6 +79,26 @@ export default function Header() {
   const [mobileSearchValue, setMobileSearchValue] = useState('');
   const [marketOpen, setMarketOpen] = useState(false);
   const marketRef = useRef<HTMLDivElement>(null);
+
+  // ── Body scroll lock ───────────────────────────────────────────
+  useEffect(() => {
+    if (menuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [menuOpen]);
+
+  // ── Mobile nav: Escape key + backdrop click ───────────────────
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setMenuOpen(false);
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [menuOpen]);
 
   // Close market dropdown on outside click or Escape
   useEffect(() => {
@@ -99,13 +119,23 @@ export default function Header() {
     };
   }, [marketOpen]);
 
+  // Close mobile nav on route click
+  function closeMenu() { setMenuOpen(false); }
+
   const t = NAV_COPY[market] ?? NAV_COPY.CN;
   const currentMarket = MARKET_OPTIONS.find(m => m.value === market)!;
+
+  function marketPath(path: string): string {
+    if (path.startsWith('http')) return path;
+    const prefix = market === 'UK' ? '' : `/${market.toLowerCase()}`;
+    if (path === '/') return prefix || '/';
+    return `${prefix}${path}`;
+  }
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     if (searchValue.trim()) {
-      navigate(`/products?search=${encodeURIComponent(searchValue.trim())}`);
+      navigate(marketPath(`/products?search=${encodeURIComponent(searchValue.trim())}`));
       setSearchValue('');
       setMenuOpen(false);
     }
@@ -114,7 +144,7 @@ export default function Header() {
   function handleMobileSearch(e: React.FormEvent) {
     e.preventDefault();
     if (mobileSearchValue.trim()) {
-      navigate(`/products?search=${encodeURIComponent(mobileSearchValue.trim())}`);
+      navigate(marketPath(`/products?search=${encodeURIComponent(mobileSearchValue.trim())}`));
       setMobileSearchValue('');
       setMenuOpen(false);
     }
@@ -124,6 +154,7 @@ export default function Header() {
     const opt = MARKET_OPTIONS.find(o => o.value === m)!;
     setMarket(m);
     setMarketOpen(false);
+    setMenuOpen(false);
     navigate(opt.url);
   }
 
@@ -219,29 +250,64 @@ export default function Header() {
         </form>
 
         {/* ── Nav ────────────────────────────────────────────────────── */}
+        {menuOpen && (
+          <button
+            type="button"
+            className={styles.mobileBackdrop}
+            onClick={() => setMenuOpen(false)}
+            aria-label="關閉選單背景"
+          />
+        )}
         <nav
           className={`${styles.nav} ${menuOpen ? styles.navOpen : ''}`}
           id="mobile-nav"
           aria-label="Main navigation"
         >
-          {CATEGORY_LINKS[market].map(cat => (
-            <Link
-              key={cat.label}
-              to={cat.param ? `/products?category=${encodeURIComponent(cat.param)}` : '/products'}
+          {/* Mobile nav header */}
+          <div className={styles.navHeader}>
+            <span className={styles.navTitle}>功能目錄</span>
+            <button
+              className={styles.navClose}
               onClick={() => setMenuOpen(false)}
+              aria-label="關閉選單"
+              type="button"
             >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+
+          {/* Core nav */}
+          <Link to={currentMarket.url} onClick={closeMenu} className={styles.mobileNavOnly}>
+            {market === 'UK' ? 'Home' : '首頁'}
+          </Link>
+          <Link to={marketPath('/products')} onClick={closeMenu} className={styles.mobileNavOnly}>
+            {market === 'UK' ? 'Products' : '全部商品'}
+          </Link>
+          {CATEGORY_LINKS[market].map(cat => (
+            (cat.param || !menuOpen) && (
+            <Link key={cat.label} to={cat.param ? marketPath(`/products?category=${encodeURIComponent(cat.param)}`) : marketPath('/products')} onClick={closeMenu}>
               {cat.label}
             </Link>
+            )
           ))}
-          <Link to="/orders" onClick={() => setMenuOpen(false)}>{t.orders}</Link>
-          <Link to="/wishlist" onClick={() => setMenuOpen(false)}>
-            {market === 'UK' ? 'Wishlist' : market === 'HK' ? '心願清單' : '心愿单'}
-            {wishlistCount > 0 && <span style={{ marginLeft: 6, background: 'var(--color-accent)', color: '#fff', borderRadius: 10, padding: '1px 8px', fontSize: '0.72rem', fontWeight: 700 }}>{wishlistCount}</span>}
+          <Link to={marketPath('/orders')} onClick={closeMenu}>{t.orders}</Link>
+          <Link to={marketPath('/cart')} onClick={closeMenu}>
+            {t.cart}
+            {totalItems > 0 && <span className={styles.navCartBadge}>{totalItems}</span>}
           </Link>
-          <Link to="/support" onClick={() => setMenuOpen(false)}>{t.support}</Link>
-          <Link to="/inventory" onClick={() => setMenuOpen(false)}>{t.inventory}</Link>
-          <Link to="/finance" onClick={() => setMenuOpen(false)}>{t.finance}</Link>
-          <Link to="/admin" onClick={() => setMenuOpen(false)} className={styles.adminLink}>{t.admin}</Link>
+          <Link to={marketPath('/wishlist')} onClick={closeMenu}>
+            {market === 'UK' ? 'Wishlist' : '心願清單'}
+            {wishlistCount > 0 && <span className={styles.navCartBadge}>{wishlistCount}</span>}
+          </Link>
+          <Link to={marketPath('/support')} onClick={closeMenu}>{t.support}</Link>
+
+          {/* Admin / ops section */}
+          <span className={styles.navSectionLabel}>後台管理</span>
+          <Link to={marketPath('/admin')} onClick={closeMenu} className={styles.adminLink}>{t.admin}</Link>
+          <Link to={marketPath('/inventory')} onClick={closeMenu}>{t.inventory}</Link>
+          <Link to={marketPath('/finance')} onClick={closeMenu}>{t.finance}</Link>
         </nav>
 
         {/* ── Mobile Search Bar ─────────────────────────────────────── */}
@@ -266,7 +332,7 @@ export default function Header() {
         {/* ── Cart + Wishlist + Menu ─────────────────────────────────── */}
         <div className={styles.actions}>
           {/* Wishlist */}
-          <Link to="/wishlist" className={styles.wishlistBtn} aria-label="Wishlist">
+          <Link to={marketPath('/wishlist')} className={styles.wishlistBtn} aria-label="Wishlist">
             <svg width="20" height="20" viewBox="0 0 24 24" fill={wishlistCount > 0 ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
             </svg>
@@ -276,7 +342,7 @@ export default function Header() {
           </Link>
 
           {/* Cart */}
-          <Link to="/cart" className={styles.cartBtn} aria-label={t.cart}>
+          <Link to={marketPath('/cart')} className={styles.cartBtn} aria-label={t.cart}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
               <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
               <line x1="3" y1="6" x2="21" y2="6"/>

@@ -12,6 +12,7 @@ import financeRouter from './routes/finance';
 import inventoryRouter from './routes/inventory';
 import supportRouter from './routes/support';
 import liveRouter from './routes/live';
+import { errorHandler } from './middleware/response';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -57,6 +58,8 @@ app.use((_req, res) => {
     error: 'API 路由不存在',
   });
 });
+
+app.use(errorHandler);
 
 // ==================== 启动服务器 ====================
 app.listen(PORT, () => {

@@ -1,11 +1,11 @@
 /**
- * 内存数据存储
- * 初始化种子数据，支持增删改查操作
+ * SQLite-backed data store.
  * All products have a `market` field so the API can filter by region.
  * Shared products (market: 'ALL') appear in every region.
  * Market-specific products only appear in their region.
  */
-import { Product, Order, Brand, Category } from './types';
+import { Product, Order, Brand, Category, OrderStatus } from './types';
+import { createSqliteCollection } from '../db';
 
 type MarketScope = 'UK' | 'HK' | 'CN' | 'ALL';
 
@@ -289,11 +289,16 @@ const _seedProducts: Product[] = [
   }),
 ];
 
-// In-memory product store — mutable at runtime
-export const products: Product[] = [..._seedProducts];
+// SQLite product store — mutable at runtime and persistent across restarts.
+const productCollection = createSqliteCollection<Product>(
+  'products',
+  'id',
+  (product) => product.id,
+  _seedProducts
+);
 
 // ==================== 订单数据 ====================
-export const orders: Order[] = [
+const _seedOrders: Order[] = [
   {
     id: 'o001',
     productId: 'p001',
@@ -320,6 +325,16 @@ export const orders: Order[] = [
   },
 ];
 
+const orderCollection = createSqliteCollection<Order>(
+  'orders',
+  'id',
+  (order) => order.id,
+  _seedOrders
+);
+
+export const products = productCollection.asArray();
+export const orders = orderCollection.asArray();
+
 // ==================== 辅助函数 ====================
 
 export function generateId(prefix: string = 'id'): string {
@@ -329,11 +344,49 @@ export function generateId(prefix: string = 'id'): string {
 }
 
 export function findProductById(id: string): Product | undefined {
-  return products.find(p => p.id === id);
+  return productCollection.find(p => p.id === id);
 }
 
 export function findOrderById(id: string): Order | undefined {
-  return orders.find(o => o.id === id);
+  return orderCollection.find(o => o.id === id);
+}
+
+export function listProducts(): Product[] {
+  return productCollection.findAll();
+}
+
+export function saveProduct(product: Product): Product {
+  return productCollection.upsert(product);
+}
+
+export function updateProduct(id: string, changes: Partial<Product>): Product | undefined {
+  const current = findProductById(id);
+  if (!current) return undefined;
+  return saveProduct({
+    ...current,
+    ...changes,
+    id: current.id,
+    createdAt: current.createdAt,
+    updatedAt: changes.updatedAt ?? new Date().toISOString(),
+  });
+}
+
+export function listOrders(): Order[] {
+  return orderCollection.findAll();
+}
+
+export function saveOrder(order: Order): Order {
+  return orderCollection.upsert(order);
+}
+
+export function updateOrderStatus(id: string, status: OrderStatus): Order | undefined {
+  const current = findOrderById(id);
+  if (!current) return undefined;
+  return saveOrder({
+    ...current,
+    status,
+    updatedAt: new Date().toISOString(),
+  });
 }
 
 /**
@@ -341,6 +394,7 @@ export function findOrderById(id: string): Order | undefined {
  * 'ALL' products appear everywhere; market-specific products only in their region.
  */
 export function filterProductsByMarket(market: string) {
-  if (!market || market === 'ALL') return products;
-  return products.filter(p => p.market === 'ALL' || p.market === market);
+  const allProducts = productCollection.findAll();
+  if (!market || market === 'ALL') return allProducts;
+  return allProducts.filter(p => p.market === 'ALL' || p.market === market);
 }
