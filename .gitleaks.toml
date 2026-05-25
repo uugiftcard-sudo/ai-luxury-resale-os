@@ -4,6 +4,9 @@
 [allowlist]
   description = "Allowlisted files and regexes for known safe patterns"
   paths = [
+    '(^|/)\.env\.example$',
+    '(^|/)docs/ENV_SETUP\.md$',
+    '(^|/)packages/db/src/env\.ts$',
     '(?i)^.*\.example\.(json|yaml|yml|toml|env)$',
     '.*\.test\.(ts|js)$',
     '.*\.spec\.(ts|js)$',

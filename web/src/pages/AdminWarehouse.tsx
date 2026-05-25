@@ -8,7 +8,7 @@ import { useInventory } from '../contexts/InventoryContext';
 import type { InventoryFormData } from '../types/warehouse';
 import styles from './AdminWarehouse.module.css';
 
-const ADMIN_PASSWORD = 'cloth-admin-2026';
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_WAREHOUSE_PASSWORD || '';
 
 export default function AdminWarehouse() {
   const { items, transactions, stats, createItem, updateItem, inbound, outbound } = useInventory();
@@ -26,6 +26,10 @@ export default function AdminWarehouse() {
 
   function handleLogin(e: React.FormEvent) {
     e.preventDefault();
+    if (!ADMIN_PASSWORD) {
+      setAuthError('管理員密碼未設定，請先配置 VITE_ADMIN_WAREHOUSE_PASSWORD。');
+      return;
+    }
     if (password === ADMIN_PASSWORD) {
       setAuthenticated(true);
       sessionStorage.setItem('cloth_admin_auth', 'ok');
@@ -46,7 +50,7 @@ export default function AdminWarehouse() {
             {authError && <p className={styles.loginError}>{authError}</p>}
             <button type="submit" className={styles.loginBtn}>登入</button>
           </form>
-          <p className={styles.loginHint}>預設密碼：cloth-admin-2026</p>
+          <p className={styles.loginHint}>請向管理員取得登入密碼。</p>
         </div>
       </div>
     );

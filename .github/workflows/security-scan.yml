@@ -68,6 +68,7 @@ jobs:
         run: |
           gitleaks detect \
             --source . \
+            --no-git \
             --config .gitleaks.toml \
             --report-path gitleaks-report.sarif \
             --report-format sarif \
