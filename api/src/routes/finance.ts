@@ -88,6 +88,12 @@ function isValidCategory(v: unknown): v is FinanceCategory {
   return valid.includes(v as FinanceCategory);
 }
 
+function parseNonNegativeNumber(value: unknown): number | null {
+  if (typeof value === 'string' && value.trim() === '') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+}
+
 // ── GET /api/finance ──────────────────────────────────────────────────────────
 router.get('/', (req: Request, res: Response) => {
   try {
@@ -197,12 +203,17 @@ router.post('/', (req: Request, res: Response) => {
       res.status(400).json({ success: false, error: '无效的类别' });
       return;
     }
+    const amount = parseNonNegativeNumber(body.amount);
+    if (amount === null) {
+      res.status(400).json({ success: false, error: 'amount 必须是有效非负数字' });
+      return;
+    }
 
     const newRecord: FinanceRecord = {
       id: generateId('f'),
       type: body.type,
       category: body.category,
-      amount: Number(body.amount) || 0,
+      amount,
       description: body.description!,
       date: body.date || new Date().toISOString().split('T')[0],
       market: body.market,
