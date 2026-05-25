@@ -3,7 +3,7 @@
  * 提供库存的增删改查、出入库操作、统计接口
  */
 import { Router, Request, Response } from 'express';
-import { ok, notFound, serverError, validateRequired } from '../middleware/response';
+import { ok, notFound, serverError } from '../middleware/response';
 import { createSqliteCollection } from '../db';
 import { generateId } from '../models/store';
 
@@ -158,6 +158,18 @@ function getStatus(item: InventoryItem): StockStatus {
   return 'in_stock';
 }
 
+function parseNonNegativeNumber(value: unknown): number | null {
+  if (typeof value === 'string' && value.trim() === '') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+}
+
+function parsePositiveNumber(value: unknown): number | null {
+  if (typeof value === 'string' && value.trim() === '') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
 // ── GET /api/inventory ────────────────────────────────────────────────────────
 router.get('/', (_req: Request, res: Response) => {
   try {
@@ -232,11 +244,13 @@ router.post('/', (req: Request, res: Response) => {
       res.status(400).json({ success: false, error: 'sku 和 productName 为必填项' });
       return;
     }
-    if (body.currentStock !== undefined && (!Number.isFinite(Number(body.currentStock)) || Number(body.currentStock) < 0)) {
+    const currentStock = body.currentStock === undefined ? 0 : parseNonNegativeNumber(body.currentStock);
+    if (currentStock === null) {
       res.status(400).json({ success: false, error: 'currentStock 必须是有效非负数字' });
       return;
     }
-    if (body.minStockThreshold !== undefined && (!Number.isFinite(Number(body.minStockThreshold)) || Number(body.minStockThreshold) < 0)) {
+    const minStockThreshold = body.minStockThreshold === undefined ? 3 : parseNonNegativeNumber(body.minStockThreshold);
+    if (minStockThreshold === null) {
       res.status(400).json({ success: false, error: 'minStockThreshold 必须是有效非负数字' });
       return;
     }
@@ -250,8 +264,8 @@ router.post('/', (req: Request, res: Response) => {
       size: body.size,
       color: body.color,
       condition: body.condition,
-      currentStock: Number(body.currentStock) || 0,
-      minStockThreshold: Number(body.minStockThreshold) || 3,
+      currentStock,
+      minStockThreshold,
       unitCost: body.unitCost,
       unitPrice: body.unitPrice,
       location: body.location,
@@ -300,17 +314,18 @@ router.delete('/:id', (req: Request, res: Response) => {
 // ── POST /api/inventory/:id/inbound ─────────────────────────────────────────
 router.post('/:id/inbound', (req: Request, res: Response) => {
   try {
-    const body = req.body as { quantity: number; referenceNo?: string; notes?: string; operator?: string };
+    const body = req.body as { quantity?: unknown; referenceNo?: string; notes?: string; operator?: string };
     const item = items.find(i => i.id === req.params.id);
     if (!item) { notFound(res, '库存商品'); return; }
-    if (!body.quantity || body.quantity <= 0) {
+    const quantity = parsePositiveNumber(body.quantity);
+    if (quantity === null) {
       res.status(400).json({ success: false, error: 'quantity 必须为正数' });
       return;
     }
 
     const updatedItem: InventoryItem = {
       ...item,
-      currentStock: item.currentStock + body.quantity,
+      currentStock: item.currentStock + quantity,
       updatedAt: new Date().toISOString(),
     };
 
@@ -320,7 +335,7 @@ router.post('/:id/inbound', (req: Request, res: Response) => {
       sku: updatedItem.sku,
       productName: updatedItem.productName,
       type: 'inbound',
-      quantity: body.quantity,
+      quantity,
       referenceNo: body.referenceNo,
       notes: body.notes,
       operator: body.operator,
@@ -341,21 +356,22 @@ router.post('/:id/inbound', (req: Request, res: Response) => {
 // ── POST /api/inventory/:id/outbound ───────────────────────────────────────
 router.post('/:id/outbound', (req: Request, res: Response) => {
   try {
-    const body = req.body as { quantity: number; referenceNo?: string; notes?: string; operator?: string };
+    const body = req.body as { quantity?: unknown; referenceNo?: string; notes?: string; operator?: string };
     const item = items.find(i => i.id === req.params.id);
     if (!item) { notFound(res, '库存商品'); return; }
-    if (!body.quantity || body.quantity <= 0) {
+    const quantity = parsePositiveNumber(body.quantity);
+    if (quantity === null) {
       res.status(400).json({ success: false, error: 'quantity 必须为正数' });
       return;
     }
-    if (item.currentStock < body.quantity) {
+    if (item.currentStock < quantity) {
       res.status(400).json({ success: false, error: `库存不足，当前库存 ${item.currentStock}` });
       return;
     }
 
     const updatedItem: InventoryItem = {
       ...item,
-      currentStock: item.currentStock - body.quantity,
+      currentStock: item.currentStock - quantity,
       updatedAt: new Date().toISOString(),
     };
 
@@ -365,7 +381,7 @@ router.post('/:id/outbound', (req: Request, res: Response) => {
       sku: updatedItem.sku,
       productName: updatedItem.productName,
       type: 'outbound',
-      quantity: -body.quantity,
+      quantity: -quantity,
       referenceNo: body.referenceNo,
       notes: body.notes,
       operator: body.operator,

@@ -107,3 +107,69 @@ test('malformed JSON returns structured JSON instead of HTML or stack trace', as
     assert.equal('stack' in payload, false);
   });
 });
+
+test('numeric fields reject invalid values instead of coercing to zero', async () => {
+  await withApi(async (port) => {
+    const invalidCreates = [
+      [
+        '/api/finance',
+        {
+          type: '收入',
+          category: '商品销售收入',
+          amount: 'abc',
+          description: 'bad finance amount',
+          date: '2026-05-25',
+        },
+        'amount 必须是有效非负数字',
+      ],
+      [
+        '/api/inventory',
+        {
+          sku: 'BAD-CURRENT-STOCK',
+          productName: 'Bad current stock',
+          currentStock: 'abc',
+          minStockThreshold: 1,
+        },
+        'currentStock 必须是有效非负数字',
+      ],
+      [
+        '/api/inventory',
+        {
+          sku: 'BAD-MIN-STOCK',
+          productName: 'Bad min stock',
+          currentStock: 1,
+          minStockThreshold: 'abc',
+        },
+        'minStockThreshold 必须是有效非负数字',
+      ],
+    ];
+
+    for (const [path, body, expectedError] of invalidCreates) {
+      const { response, payload } = await postJson(port, path, body);
+      assert.equal(response.status, 400, path);
+      assert.equal(payload.success, false, path);
+      assert.equal(payload.error, expectedError, path);
+      assert.equal('stack' in payload, false, path);
+    }
+
+    const created = await postJson(port, '/api/inventory', {
+      sku: 'QTY-VALIDATION',
+      productName: 'Quantity validation item',
+      currentStock: 3,
+      minStockThreshold: 1,
+    });
+    assert.equal(created.response.status, 200);
+    const inventoryId = created.payload.data.id;
+
+    for (const path of [
+      `/api/inventory/${inventoryId}/inbound`,
+      `/api/inventory/${inventoryId}/outbound`,
+    ]) {
+      const { response, payload } = await postJson(port, path, { quantity: 'abc' });
+      assert.equal(response.status, 400, path);
+      assert.equal(payload.success, false, path);
+      assert.equal(payload.error, 'quantity 必须为正数', path);
+      assert.equal('stack' in payload, false, path);
+    }
+  });
+});
