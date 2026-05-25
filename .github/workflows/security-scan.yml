@@ -53,15 +53,30 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Install Gitleaks
+        run: |
+          set -euo pipefail
+          GITLEAKS_VERSION="8.24.3"
+          curl -fsSLo gitleaks.tar.gz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          tar -xzf gitleaks.tar.gz gitleaks
+          sudo install -m 0755 gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+
       - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2.3.9
-        with:
-          args: 'detect --source . --config-path .gitleaks.toml --report-path gitleaks-report.sarif --format sarif'
-          token: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gitleaks detect \
+            --source . \
+            --config .gitleaks.toml \
+            --report-path gitleaks-report.sarif \
+            --report-format sarif \
+            --redact \
+            --no-banner
 
       - name: Upload Gitleaks report
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        if: always() && hashFiles('gitleaks-report.sarif') != ''
         with:
           sarif_file: gitleaks-report.sarif
           category: gitleaks
