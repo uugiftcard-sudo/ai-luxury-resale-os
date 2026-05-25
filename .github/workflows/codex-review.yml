@@ -39,6 +39,16 @@ jobs:
           CODEX_API_KEY: ${{ secrets.CODEX_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          if [ -z "${CODEX_API_KEY:-}" ]; then
+            echo "::notice::Skipping Codex review because CODEX_API_KEY is not configured."
+            exit 0
+          fi
+
+          if ! command -v codex >/dev/null 2>&1; then
+            echo "::notice::Skipping Codex review because the codex CLI is not installed on this runner."
+            exit 0
+          fi
+
           BASE_REF="${{ github.event.pull_request.base.ref || 'main' }}"
 
           echo "Reviewing changes against base: $BASE_REF"

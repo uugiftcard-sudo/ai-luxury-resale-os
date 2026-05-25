@@ -24,7 +24,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Trivy
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/setup-trivy@v0.2.3
+        with:
+          version: v0.70.0
 
       - name: Run Trivy FS scan
         run: trivy fs --severity HIGH,CRITICAL --format sarif --output trivy-results.sarif .
@@ -48,7 +50,7 @@ jobs:
           fetch-depth: 0
 
       - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v3
+        uses: gitleaks/gitleaks-action@v2.3.9
         with:
           args: 'detect --source . --config-path .gitleaks.toml --report-path gitleaks-report.sarif --format sarif'
           token: ${{ secrets.GITHUB_TOKEN }}
