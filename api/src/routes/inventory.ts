@@ -3,7 +3,7 @@
  * 提供库存的增删改查、出入库操作、统计接口
  */
 import { Router, Request, Response } from 'express';
-import { ok, notFound, serverError } from '../middleware/response';
+import { ok, notFound, serverError, validateRequired } from '../middleware/response';
 import { createSqliteCollection } from '../db';
 import { generateId } from '../models/store';
 
@@ -230,6 +230,14 @@ router.post('/', (req: Request, res: Response) => {
     const body = req.body as Partial<InventoryItem>;
     if (!body.sku || !body.productName) {
       res.status(400).json({ success: false, error: 'sku 和 productName 为必填项' });
+      return;
+    }
+    if (body.currentStock !== undefined && (!Number.isFinite(Number(body.currentStock)) || Number(body.currentStock) < 0)) {
+      res.status(400).json({ success: false, error: 'currentStock 必须是有效非负数字' });
+      return;
+    }
+    if (body.minStockThreshold !== undefined && (!Number.isFinite(Number(body.minStockThreshold)) || Number(body.minStockThreshold) < 0)) {
+      res.status(400).json({ success: false, error: 'minStockThreshold 必须是有效非负数字' });
       return;
     }
     const newItem: InventoryItem = {

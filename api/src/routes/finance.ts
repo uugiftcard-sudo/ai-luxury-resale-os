@@ -197,6 +197,10 @@ router.post('/', (req: Request, res: Response) => {
       res.status(400).json({ success: false, error: '无效的类别' });
       return;
     }
+    if (body.amount === undefined || !Number.isFinite(Number(body.amount)) || Number(body.amount) < 0) {
+      res.status(400).json({ success: false, error: 'amount 必须是有效非负数字' });
+      return;
+    }
 
     const newRecord: FinanceRecord = {
       id: generateId('f'),
