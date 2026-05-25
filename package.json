@@ -15,6 +15,7 @@
     "lint": "eslint api/src web/src --max-warnings=20",
     "check": "npm run build",
     "start": "npm run start --workspace=api",
+    "test:scenarios": "node --test scripts/api-validation-errors.test.mjs scripts/product-market-persistence.test.mjs scripts/mobile-nav-contract.test.mjs scripts/api-smoke.test.mjs && node --import tsx --test api/src/db/sqlite-store.test.ts",
     "agent:run": "node_modules/.bin/tsx scripts/run-cycle.ts"
   },
   "devDependencies": {
