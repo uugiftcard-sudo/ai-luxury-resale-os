@@ -1,4 +1,4 @@
-* eslint-env node *
+/* eslint-env node */
 /**
  * CLOTH API Smoke Contracts — P1-D (single-server version)
  * 啟動一個 server，跑晒所有 smoke。

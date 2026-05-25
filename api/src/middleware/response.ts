@@ -2,7 +2,7 @@
  * 验证中间件
  * 提供请求参数验证和错误处理
  */
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 
 /**
  * 统一响应格式
@@ -74,9 +74,32 @@ export function notFound(res: Response, resource: string = '资源'): void {
 }
 
 /**
- * 500 处理
+ * 500 处理 — structured JSON error，唔爆 stack trace
  */
 export function serverError(res: Response, err: unknown): void {
   console.error('服务器错误:', err);
   fail(res, 500, '服务器内部错误');
+}
+
+/**
+ * Express 全局错误处理，确保 parser / route errors 不回 HTML 或 stack trace。
+ */
+export function errorHandler(
+  err: unknown,
+  _req: Request,
+  res: Response,
+  _next: NextFunction
+): void {
+  if (res.headersSent) return;
+
+  const status = typeof err === 'object' && err !== null && 'status' in err
+    ? Number((err as { status?: unknown }).status) || 500
+    : 500;
+
+  if (status === 400) {
+    fail(res, 400, '请求 JSON 格式错误');
+    return;
+  }
+
+  serverError(res, err);
 }
