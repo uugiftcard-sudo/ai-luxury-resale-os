@@ -102,7 +102,7 @@ export default function Admin() {
   // 加载全部商品（包括非待售）
   function loadAllProducts() {
     setProductsLoading(true);
-    productApi.list(market, { limit: 100 })
+    productApi.list(market, { limit: 50 })
       .then(res => setProducts(res.data))
       .catch(() => {}) // error handling via UI
       .finally(() => setProductsLoading(false));

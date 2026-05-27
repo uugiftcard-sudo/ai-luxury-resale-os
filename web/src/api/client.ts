@@ -90,7 +90,7 @@ export const productApi = {
     const base = apiBase(market);
     return request<Product>(base, '/products', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify({ ...data, market }),
     }).then(r => r.data!);
   },
 
@@ -98,7 +98,7 @@ export const productApi = {
     const base = apiBase(market);
     return request<Product>(base, `/products/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(data),
+      body: JSON.stringify({ ...data, market }),
     }).then(r => r.data!);
   },
 
