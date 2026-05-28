@@ -100,6 +100,26 @@ export default function Admin() {
 
   const [pendingDelete, setPendingDelete] = useState<{ id: string; title: string } | null>(null);
 
+  // Browser-native confirm — fires when pendingDelete state is set (bypasses dialog-accept interception)
+  useEffect(() => {
+    if (!pendingDelete) return;
+    const confirmed = window.confirm(
+      `确定要下架「${pendingDelete.title}」吗？下架后商品将从待售列表移除。`
+    );
+    if (confirmed) {
+      productApi
+        .delete(pendingDelete.id, market)
+        .then(() => {
+          setProducts(prev =>
+            prev.map(p => p.id === pendingDelete.id ? { ...p, status: '已下架' } : p)
+          );
+          showToast('商品已下架', 'info');
+        })
+        .catch(() => showToast('下架失败', 'error'));
+    }
+    setPendingDelete(null);
+  }, [pendingDelete]); // eslint-disable-line react-hooks/exhaustive-deps
+
   function loadAllProducts() {
     setProductsLoading(true);
     setProductsError('');
