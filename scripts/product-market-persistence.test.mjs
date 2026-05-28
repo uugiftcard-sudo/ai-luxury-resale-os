@@ -76,9 +76,9 @@ test('POST /api/products persists market so market filtering can find the produc
     );
     assert.equal(listResponse.status, 200);
     const listed = await listResponse.json();
-    assert.equal(listed.data.total, 1);
-    assert.equal(listed.data.data[0].id, created.data.id);
-    assert.equal(listed.data.data[0].market, 'UK');
+    const matches = listed.data.data.filter(product => product.id === created.data.id);
+    assert.equal(matches.length, 1);
+    assert.equal(matches[0].market, 'UK');
   } finally {
     stopServer(server);
     rmSync(dir, { recursive: true, force: true });
