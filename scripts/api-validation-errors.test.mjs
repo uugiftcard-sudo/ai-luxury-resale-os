@@ -44,7 +44,7 @@ async function postJson(port, path, body) {
 async function withApi(testBody) {
   const dir = mkdtempSync(join(tmpdir(), 'cloth-validation-'));
   const dbPath = join(dir, 'cloth.sqlite');
-  const port = 3499;
+  const port = Number.parseInt(process.env.CLOTH_API_PORT || '', 10) || 3499;
   const server = spawn('npm', ['run', 'dev', '--workspace=api'], {
     cwd: new URL('..', import.meta.url),
     detached: true,
