@@ -9,6 +9,8 @@ import { productApi, orderApi, displayPrice } from '../api/client';
 import { useCart } from '../hooks/useCart';
 import { useToast } from '../hooks/useToast';
 import { useMarket } from '../hooks/useMarket';
+import { usePoster } from '../hooks/usePoster';
+import PosterTemplate from '../components/PosterTemplate';
 import type { Product } from '../types';
 import styles from './ProductDetail.module.css';
 
@@ -81,6 +83,9 @@ export default function ProductDetail() {
   const [loading, setLoading] = useState(true);
   const [activeImg, setActiveImg] = useState(0);
   const [orderModalOpen, setOrderModalOpen] = useState(false);
+
+  // Poster generation
+  const { generating: posterGenerating, generateAndDownload } = usePoster();
 
   // 订单表单状态
   const [buyerName, setBuyerName] = useState('');
@@ -324,6 +329,25 @@ export default function ProductDetail() {
                       ? (market === 'UK' ? 'In Cart' : '已在购物车')
                       : (market === 'UK' ? 'Add to Cart' : '加入购物车')}
                   </button>
+                  <button
+                    className={`btn btn-secondary btn-lg ${styles.posterBtn}`}
+                    onClick={() => generateAndDownload(product, market)}
+                    disabled={posterGenerating}
+                    title={market === 'UK' ? 'Download promo poster' : '下載宣傳海報'}
+                  >
+                    {posterGenerating ? (
+                      <span className={styles.posterSpinner} />
+                    ) : (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                      </svg>
+                    )}
+                    {posterGenerating
+                      ? (market === 'UK' ? 'Generating...' : '生成中...')
+                      : (market === 'UK' ? 'Poster' : '海報')}
+                  </button>
                 </>
               )}
             </div>
@@ -433,6 +457,19 @@ export default function ProductDetail() {
           </div>
         </div>
       )}
+
+      {/* ── Hidden promo poster template (rendered off-screen, captured by html2canvas) ── */}
+      <div
+        style={{
+          position: 'fixed',
+          top: '-9999px',
+          left: '-9999px',
+          zIndex: -1,
+          pointerEvents: 'none',
+        }}
+      >
+        <PosterTemplate product={product} market={market} />
+      </div>
     </div>
   );
 }
