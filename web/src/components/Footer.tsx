@@ -14,7 +14,7 @@ const FOOTER_COPY: Record<string, {
   aboutTitle: string;
   categories: { label: string; href: string }[];
   brands: { label: string; href: string }[];
-  about: { label: string; href: string }[];
+  about: { label: string; href: string; comingSoon?: boolean }[];
   copyright: string;
   legal: string;
 }> = {
@@ -39,12 +39,12 @@ const FOOTER_COPY: Record<string, {
       { label: 'Hermès', href: '/products?brand=Herm%C3%A8s' },
     ],
     about: [
-      { label: 'About Us', href: '#' },
+      { label: 'About Us', href: '/support' },
       { label: 'Support', href: '/support' },
-      { label: 'Authentication Process', href: '#' },
-      { label: 'Delivery & Returns', href: '#' },
-      { label: 'Privacy Policy', href: '#' },
-      { label: 'Contact Us', href: '#' },
+      { label: 'Authentication Process', href: '/support' },
+      { label: 'Delivery & Returns', href: '/support' },
+      { label: 'Privacy Policy', href: '/support' },
+      { label: 'Contact Us', href: '/support' },
       { label: 'Admin', href: '/admin' },
       { label: 'Warehouse', href: '/admin/warehouse' },
     ],
@@ -72,12 +72,12 @@ const FOOTER_COPY: Record<string, {
       { label: 'Hermès', href: '/hk/products?brand=Herm%C3%A8s' },
     ],
     about: [
-      { label: '關於我們', href: '#' },
+      { label: '關於我們', href: '/hk/support' },
       { label: '客戶服務', href: '/hk/support' },
-      { label: '正品保障', href: '#' },
-      { label: '送貨與退換', href: '#' },
-      { label: '隱私政策', href: '#' },
-      { label: '聯絡我們', href: '#' },
+      { label: '正品保障', href: '/hk/support' },
+      { label: '送貨與退換', href: '/hk/support' },
+      { label: '隱私政策', href: '/hk/support' },
+      { label: '聯絡我們', href: '/hk/support' },
       { label: '管理後台', href: '/hk/admin' },
       { label: '倉庫後台', href: '/hk/admin/warehouse' },
     ],
@@ -105,12 +105,12 @@ const FOOTER_COPY: Record<string, {
       { label: 'Hermès', href: '/cn/products?brand=Herm%C3%A8s' },
     ],
     about: [
-      { label: '关于我们', href: '#' },
+      { label: '关于我们', href: '/cn/support' },
       { label: '客户服务', href: '/cn/support' },
-      { label: '正品保障', href: '#' },
-      { label: '交易流程', href: '#' },
-      { label: '隐私条款', href: '#' },
-      { label: '帮助中心', href: '#' },
+      { label: '正品保障', href: '/cn/support' },
+      { label: '交易流程', href: '/cn/support' },
+      { label: '隐私条款', href: '/cn/support' },
+      { label: '帮助中心', href: '/cn/support' },
       { label: '管理后台', href: '/cn/admin' },
       { label: '仓库后台', href: '/cn/admin/warehouse' },
     ],
@@ -133,16 +133,16 @@ export default function Footer() {
             <p className={styles.tagline}>{t.tagline}</p>
             <p className={styles.description}>{t.description}</p>
             <div className={styles.socials}>
-              <a href="#" aria-label="小红书" className={styles.socialIcon}>
+              <span className={styles.socialIconDisabled} title="即將推出">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/>
                 </svg>
-              </a>
-              <a href="#" aria-label="微信" className={styles.socialIcon}>
+              </span>
+              <span className={styles.socialIconDisabled} title="即將推出">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M8.5 11c-.83 0-1.5.67-1.5 1.5S7.67 14 8.5 14s1.5-.67 1.5-1.5S9.33 11 8.5 11zm7 0c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zM20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8l8 5 8-5v10z"/>
                 </svg>
-              </a>
+              </span>
             </div>
           </div>
 
@@ -162,13 +162,20 @@ export default function Footer() {
             </div>
             <div className={styles.linkGroup}>
               <h4>{t.aboutTitle}</h4>
-              {t.about.map(item => (
-                item.href.startsWith('/') ? (
+              {t.about.map(item => {
+                if (item.comingSoon) {
+                  return (
+                    <span key={`${item.label}-${item.href}`} className={styles.comingSoon} title="即將推出">
+                      {item.label}
+                    </span>
+                  );
+                }
+                return item.href.startsWith('/') ? (
                   <Link key={`${item.label}-${item.href}`} to={item.href}>{item.label}</Link>
                 ) : (
                   <a key={`${item.label}-${item.href}`} href={item.href}>{item.label}</a>
-                )
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

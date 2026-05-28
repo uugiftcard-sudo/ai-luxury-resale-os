@@ -22,11 +22,14 @@ export default function Orders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('');
+  const [error, setError] = useState('');
 
   useEffect(() => {
+    setLoading(true);
+    setError('');
     orderApi.list(market, filterStatus || undefined)
       .then(res => setOrders(res.data))
-      .catch(() => {}) // error handled silently
+      .catch(err => setError(err instanceof Error ? err.message : '載入訂單失敗'))
       .finally(() => setLoading(false));
   }, [filterStatus, market]);
 
@@ -52,9 +55,18 @@ export default function Orders() {
           ))}
         </div>
 
+        {error && (
+          <div style={{ margin: 'var(--space-md) 0', padding: '12px 16px', background: 'rgba(198,40,40,0.1)', border: '1.5px solid #c62828', borderRadius: 'var(--radius-md)', color: '#c62828', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            {error}
+          </div>
+        )}
+
         {loading ? (
           <div className="loading-spinner"><div className="spinner" /></div>
-        ) : orders.length === 0 ? (
+        ) : !error && orders.length === 0 ? (
           <div className="empty-state">
             <h3>
               {market === 'UK' ? 'No orders yet' : '暫無訂單'}

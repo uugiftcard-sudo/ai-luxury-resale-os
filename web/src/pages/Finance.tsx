@@ -44,6 +44,7 @@ export default function Finance() {
 
   const [records, setRecords] = useState<FinanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'income' | 'expense'>('all');
 
   const [form, setForm] = useState<FinanceRecordFormData>(emptyForm());
@@ -57,9 +58,10 @@ export default function Finance() {
   // ── Load ────────────────────────────────────────────────────────────────────
   function load() {
     setLoading(true);
+    setLoadError('');
     financeApi.list(market)
       .then(setRecords)
-      .catch(err => showToast(err instanceof Error ? err.message : '載入失敗', 'error'))
+      .catch(err => setLoadError(err instanceof Error ? err.message : '載入失敗'))
       .finally(() => setLoading(false));
   }
 
@@ -274,8 +276,18 @@ export default function Finance() {
             <div className="loading-spinner"><div className="spinner" /></div>
           )}
 
+          {/* 加载错误 */}
+          {!loading && loadError && (
+            <div style={{ padding: '16px', background: 'rgba(198,40,40,0.08)', border: '1.5px solid #c62828', borderRadius: 'var(--radius-md)', color: '#c62828', display: 'flex', alignItems: 'center', gap: 8, marginTop: 'var(--space-md)' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              {loadError}
+            </div>
+          )}
+
           {/* 空状态 */}
-          {!loading && filteredRecords.length === 0 && (
+          {!loading && !loadError && filteredRecords.length === 0 && (
             <div className="empty-state">
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-border)" strokeWidth="1.5" style={{ margin: '0 auto var(--space-md)' }}>
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
