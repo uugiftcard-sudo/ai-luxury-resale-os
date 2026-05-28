@@ -118,7 +118,7 @@ export default function Admin() {
         .catch(() => showToast('下架失败', 'error'));
     }
     setPendingDelete(null);
-  }, [pendingDelete]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pendingDelete]);
 
   function loadAllProducts() {
     setProductsLoading(true);

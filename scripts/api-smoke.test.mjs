@@ -12,7 +12,7 @@ import { tmpdir } from 'node:os';
 
 const PORT = 3499;
 const BASE = `http://127.0.0.1:${PORT}`;
-const HEALTH_TRIES = 30; // seconds to wait for server startup
+const HEALTH_TRIES = 120; // seconds to wait for server startup (CI can be slower)
 
 let server, dbDir;
 

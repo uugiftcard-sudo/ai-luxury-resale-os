@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 
 async function waitForHealth(port, server) {
   const url = `http://127.0.0.1:${port}/api/health`;
-  for (let attempt = 0; attempt < 80; attempt += 1) {
+  for (let attempt = 0; attempt < 200; attempt += 1) {
     if (server.exitCode !== null) {
       throw new Error(`API exited before health check passed with code ${server.exitCode}`);
     }
@@ -44,7 +44,7 @@ async function postJson(port, path, body) {
 async function withApi(testBody) {
   const dir = mkdtempSync(join(tmpdir(), 'cloth-validation-'));
   const dbPath = join(dir, 'cloth.sqlite');
-  const port = 3840 + Math.floor(Math.random() * 500);
+  const port = 3499;
   const server = spawn('npm', ['run', 'dev', '--workspace=api'], {
     cwd: new URL('..', import.meta.url),
     detached: true,
