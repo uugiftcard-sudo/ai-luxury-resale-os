@@ -10,11 +10,12 @@ export default defineConfig({
     },
   },
   build: {
+    chunkSizeWarningLimit: 220,
     rollupOptions: {
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom', 'react-router-dom'],
-          supabase: ['@supabase/supabase-js'],
+          'html2canvas': ['html2canvas'],
         },
       },
     },
@@ -23,7 +24,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
+        target: 'http://localhost:3003',
         changeOrigin: true,
       },
     },
