@@ -42,7 +42,6 @@ export function SupportProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    supportApi.seedDemo();
     refreshTickets();
   }, [refreshTickets]);
 
@@ -53,7 +52,7 @@ export function SupportProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const replyToTicket = useCallback(async (id: string, message: string): Promise<SupportMessage> => {
-    const msg = await supportApi.reply(id, message);
+    const msg = await supportApi.addMessage(id, message, 'Customer');
     await refreshTickets();
     return msg;
   }, [refreshTickets]);

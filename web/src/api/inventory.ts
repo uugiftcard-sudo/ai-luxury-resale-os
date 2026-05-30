@@ -1,50 +1,49 @@
 /**
- * Inventory API — routes requests through mockStorage.
- * Swap to real Supabase endpoints once configured.
+ * Inventory API — real backend via /api/inventory
  */
-import { inventoryStorage, StoredInventoryItem, StoredInventoryTransaction } from '../lib/mockStorage';
 import type { InventoryItem, InventoryTransaction, InventoryFormData, InventoryStats } from '../types/warehouse';
 
-function toItem(s: StoredInventoryItem): InventoryItem {
-  return {
-    id: s.id, sku: s.sku, productId: s.productId, productName: s.productName,
-    brand: s.brand, category: s.category, size: s.size, color: s.color,
-    condition: s.condition, currentStock: s.currentStock, minStockThreshold: s.minStockThreshold,
-    unitCost: s.unitCost, unitPrice: s.unitPrice, location: s.location,
-    supplier: s.supplier, notes: s.notes, createdAt: s.createdAt, updatedAt: s.updatedAt,
-  };
-}
+const BASE = '/api';
 
-function toTx(s: StoredInventoryTransaction): InventoryTransaction {
-  return {
-    id: s.id, inventoryId: s.inventoryId, sku: s.sku, productName: s.productName,
-    type: s.type, quantity: s.quantity, referenceNo: s.referenceNo,
-    notes: s.notes, operator: s.operator, createdAt: s.createdAt,
-  };
+async function req<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    headers: { 'Content-Type': 'application/json', ...init?.headers },
+    ...init,
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || `请求失败 (${res.status})`);
+  return json.data as T;
 }
 
 export const inventoryApi = {
   list(): Promise<InventoryItem[]> {
-    return Promise.resolve(inventoryStorage.getItems().map(toItem));
+    return req<InventoryItem[]>('/inventory');
   },
 
   getById(id: string): Promise<InventoryItem | null> {
-    const item = inventoryStorage.getItemById(id);
-    return Promise.resolve(item ? toItem(item) : null);
+    return req<InventoryItem | null>(`/inventory/${id}`).catch(() => null);
   },
 
   create(form: InventoryFormData): Promise<InventoryItem> {
-    const item = inventoryStorage.createItem(form);
-    return Promise.resolve(toItem(item));
+    return req<InventoryItem>('/inventory', {
+      method: 'POST',
+      body: JSON.stringify(form),
+    });
   },
 
   update(id: string, updates: Partial<InventoryItem>): Promise<InventoryItem | null> {
-    const item = inventoryStorage.updateItem(id, updates);
-    return Promise.resolve(item ? toItem(item) : null);
+    return req<InventoryItem | null>(`/inventory/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  },
+
+  delete(id: string): Promise<void> {
+    return req<void>(`/inventory/${id}`, { method: 'DELETE' }) as Promise<void>;
   },
 
   getTransactions(): Promise<InventoryTransaction[]> {
-    return Promise.resolve(inventoryStorage.getTransactions().map(toTx));
+    return req<InventoryTransaction[]>('/inventory/transactions');
   },
 
   inbound(data: {
@@ -57,36 +56,29 @@ export const inventoryApi = {
     unitCost?: number;
     operator?: string;
   }): Promise<{ item: InventoryItem; transaction: InventoryTransaction }> {
-    let item: StoredInventoryItem | null = null;
-
     if (data.inventoryId) {
-      item = inventoryStorage.adjustStock(data.inventoryId, data.quantity);
+      return req<{ item: InventoryItem; transaction: InventoryTransaction }>(
+        `/inventory/${data.inventoryId}/inbound`,
+        { method: 'POST', body: JSON.stringify({ quantity: data.quantity, referenceNo: data.referenceNo, notes: data.notes, operator: data.operator }) }
+      );
     }
-
-    if (!item) {
-      const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-      item = inventoryStorage.createItem({
-        id,
-        sku: data.sku ?? `AUTO-${id}`,
+    // No existing inventoryId — create the item first, then inbound
+    return req<InventoryItem>('/inventory', {
+      method: 'POST',
+      body: JSON.stringify({
+        sku: data.sku ?? `AUTO-${Date.now()}`,
         productName: data.productName,
         currentStock: data.quantity,
         minStockThreshold: 3,
         unitCost: data.unitCost,
-      });
-    }
-
-    const tx = inventoryStorage.addTransaction({
-      inventoryId: item.id,
-      sku: item.sku,
-      productName: item.productName,
-      type: 'inbound',
-      quantity: data.quantity,
-      referenceNo: data.referenceNo,
-      notes: data.notes,
-      operator: data.operator,
-    });
-
-    return Promise.resolve({ item: toItem(item), transaction: toTx(tx) });
+        notes: data.notes,
+      }),
+    }).then(item =>
+      req<{ item: InventoryItem; transaction: InventoryTransaction }>(
+        `/inventory/${item.id}/inbound`,
+        { method: 'POST', body: JSON.stringify({ quantity: data.quantity, referenceNo: data.referenceNo, notes: data.notes, operator: data.operator }) }
+      )
+    );
   },
 
   outbound(data: {
@@ -96,34 +88,17 @@ export const inventoryApi = {
     notes?: string;
     operator?: string;
   }): Promise<{ item: InventoryItem; transaction: InventoryTransaction }> {
-    const item = inventoryStorage.adjustStock(data.inventoryId, -data.quantity);
-    if (!item) return Promise.reject(new Error('Item not found'));
-
-    const tx = inventoryStorage.addTransaction({
-      inventoryId: item.id,
-      sku: item.sku,
-      productName: item.productName,
-      type: 'outbound',
-      quantity: -data.quantity,
-      referenceNo: data.referenceNo,
-      notes: data.notes,
-      operator: data.operator,
-    });
-
-    return Promise.resolve({ item: toItem(item), transaction: toTx(tx) });
+    return req<{ item: InventoryItem; transaction: InventoryTransaction }>(
+      `/inventory/${data.inventoryId}/outbound`,
+      { method: 'POST', body: JSON.stringify({ quantity: data.quantity, referenceNo: data.referenceNo, notes: data.notes, operator: data.operator }) }
+    );
   },
 
   getStats(): Promise<InventoryStats> {
-    const items = inventoryStorage.getItems();
-    const totalSKUs = items.length;
-    const totalStock = items.reduce<number>((sum, i) => sum + i.currentStock, 0);
-    const lowStockCount = items.filter((i: StoredInventoryItem) => i.currentStock > 0 && i.currentStock <= i.minStockThreshold).length;
-    const outOfStockCount = items.filter((i: StoredInventoryItem) => i.currentStock === 0).length;
-    const totalValue = items.reduce<number>((sum, i) => sum + (i.currentStock * (i.unitCost ?? 0)), 0);
-    return Promise.resolve({ totalSKUs, totalStock, lowStockCount, outOfStockCount, totalValue });
+    return req<InventoryStats>('/inventory/stats');
   },
 
-  seedDemo(): void {
-    inventoryStorage.seedDemoInventory();
+  getAlerts(): Promise<InventoryItem[]> {
+    return req<InventoryItem[]>('/inventory/alerts');
   },
 };
