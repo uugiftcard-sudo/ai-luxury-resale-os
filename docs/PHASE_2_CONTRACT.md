@@ -33,7 +33,7 @@ Supported query params:
 | Param | Type | Default | Rules |
 |---|---:|---:|---|
 | `market` | `ALL \| UK \| HK \| CN` | `ALL` | `ALL` shows all shared + regional products; regional market shows `ALL` + matching market |
-| `status` | `待售 \| 已售出 \| 已下架` | `待售` | invalid value returns 400 |
+| `status` | `待售 \| 已售 \| 已下架` | `待售` | invalid value returns 400 |
 | `brand` | string | none | exact match |
 | `category` | string | none | exact match |
 | `condition` | string | none | exact match against existing product condition values |

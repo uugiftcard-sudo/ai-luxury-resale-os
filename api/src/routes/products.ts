@@ -1,6 +1,7 @@
 /**
  * 商品路由
  * 提供商品的增删改查 API
+ * Phase 2: 高級過濾 + 分頁
  */
 import { Router, Request, Response } from 'express';
 import {
@@ -10,72 +11,145 @@ import {
   saveProduct,
   updateProduct,
 } from '../models/store';
-import { MarketScope, Product, ProductFilter, ProductStatus } from '../models/types';
+import { MarketScope, Product, ProductCondition, ProductStatus } from '../models/types';
 import { ok, notFound, serverError, validateRequired } from '../middleware/response';
 
 const router = Router();
 
+const VALID_CONDITIONS: ProductCondition[] = ['全新', '几乎全新', '轻微使用痕迹', '有明显使用痕迹'];
+const VALID_STATUSES: ProductStatus[] = ['待售', '已售', '已下架'];
+const VALID_MARKETS: MarketScope[] = ['UK', 'HK', 'CN', 'ALL'];
+const VALID_SORTS = ['createdAt_desc', 'createdAt_asc', 'price_asc', 'price_desc'] as const;
+
+type ProductSort = typeof VALID_SORTS[number];
+
 function normalizeMarket(value: unknown): MarketScope {
-  return value === 'UK' || value === 'HK' || value === 'CN' || value === 'ALL' ? value : 'ALL';
+  const candidate = value as MarketScope;
+  return VALID_MARKETS.includes(candidate) ? candidate : 'ALL';
+}
+
+function getQueryValue(value: unknown): string | undefined {
+  if (Array.isArray(value)) return getQueryValue(value[0]);
+  return typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined;
+}
+
+function parseIntegerParam(value: unknown, fallback: number): number | null {
+  const raw = getQueryValue(value);
+  if (raw === undefined) return fallback;
+  const parsed = Number(raw);
+  return Number.isInteger(parsed) ? parsed : null;
+}
+
+function parseNonNegativeParam(value: unknown): number | null | undefined {
+  const raw = getQueryValue(value);
+  if (raw === undefined) return undefined;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
 }
 
 /**
  * GET /api/products
- * 商品列表（支持分页、筛选、market 过滤）
+ * 高級過濾 + Offset 分頁
+ * Query: market, brand, category, condition, status, minPrice, maxPrice,
+ *        search, page, limit, sort
  */
 router.get('/', (req: Request, res: Response) => {
   try {
-    const {
-      market = 'ALL',
-      brand,
-      category,
-      condition,
-      minPrice,
-      maxPrice,
-      status = '待售',
-      search,
-      page = '1',
-      limit = '12',
-    } = req.query;
+    const market = getQueryValue(req.query.market) || 'ALL';
+    const status = getQueryValue(req.query.status) || '待售';
+    const brand = getQueryValue(req.query.brand);
+    const category = getQueryValue(req.query.category);
+    const condition = getQueryValue(req.query.condition);
+    const search = getQueryValue(req.query.search);
+    const sort = getQueryValue(req.query.sort) || 'createdAt_desc';
 
-    const filter: ProductFilter = {
-      brand: brand as string | undefined,
-      category: category as string | undefined,
-      condition: condition as Product['condition'] | undefined,
-      minPrice: minPrice ? Number(minPrice) : undefined,
-      maxPrice: maxPrice ? Number(maxPrice) : undefined,
-      status: (status as ProductStatus) || '待售',
-      search: search as string | undefined,
-      page: Number(page),
-      limit: Number(limit),
-    };
+    // ── Validate numeric params ────────────────────────────────────────────
+    const pageNum = parseIntegerParam(req.query.page, 1);
+    if (pageNum === null || pageNum < 1) {
+      res.status(400).json({ success: false, error: 'page 必须是大于等于 1 的整数' });
+      return;
+    }
 
-    // Filter by market scope
-    const visible = filterProductsByMarket(market as string);
+    const limitNum = parseIntegerParam(req.query.limit, 12);
+    if (limitNum === null || limitNum < 1 || limitNum > 50) {
+      res.status(400).json({ success: false, error: 'limit 必须在 1-50 之间' });
+      return;
+    }
 
+    const minPrice = parseNonNegativeParam(req.query.minPrice);
+    if (minPrice === null) {
+      res.status(400).json({ success: false, error: 'minPrice 必须是有效非负数字' });
+      return;
+    }
+    const maxPrice = parseNonNegativeParam(req.query.maxPrice);
+    if (maxPrice === null) {
+      res.status(400).json({ success: false, error: 'maxPrice 必须是有效非负数字' });
+      return;
+    }
+    if (minPrice !== undefined && maxPrice !== undefined && minPrice > maxPrice) {
+      res.status(400).json({ success: false, error: 'minPrice 不能大于 maxPrice' });
+      return;
+    }
+
+    if (!VALID_MARKETS.includes(market as MarketScope)) {
+      res.status(400).json({ success: false, error: 'market 必须是 ALL/UK/HK/CN' });
+      return;
+    }
+
+    if (!VALID_STATUSES.includes(status as ProductStatus)) {
+      res.status(400).json({ success: false, error: 'status 必须是待售/已售/已下架' });
+      return;
+    }
+
+    if (!VALID_SORTS.includes(sort as ProductSort)) {
+      res.status(400).json({ success: false, error: 'sort 必须是 createdAt_desc / createdAt_asc / price_asc / price_desc' });
+      return;
+    }
+
+    if (condition !== undefined && !VALID_CONDITIONS.includes(condition as ProductCondition)) {
+      res.status(400).json({ success: false, error: `无效的 condition: ${condition}` });
+      return;
+    }
+
+    // ── Base filter: market ──────────────────────────────────────────────
+    const visible = filterProductsByMarket(market);
+
+    // ── Apply filters ─────────────────────────────────────────────────────
     const filtered = visible.filter(p => {
-      if (filter.status && p.status !== filter.status) return false;
-      if (filter.brand && p.brand !== filter.brand) return false;
-      if (filter.category && p.category !== filter.category) return false;
-      if (filter.condition && p.condition !== filter.condition) return false;
-      if (filter.minPrice !== undefined && p.price < filter.minPrice) return false;
-      if (filter.maxPrice !== undefined && p.price > filter.maxPrice) return false;
-      if (filter.search) {
-        const q = filter.search.toLowerCase();
+      if (p.status !== status) return false;
+
+      if (brand !== undefined && p.brand !== brand) return false;
+      if (category !== undefined && p.category !== category) return false;
+
+      if (condition !== undefined && p.condition !== condition) return false;
+
+      if (minPrice !== undefined && p.price < minPrice) return false;
+      if (maxPrice !== undefined && p.price > maxPrice) return false;
+
+      if (search !== undefined) {
+        const q = search.toLowerCase();
         if (
           !p.title.toLowerCase().includes(q) &&
           !p.brand.toLowerCase().includes(q) &&
           !p.description.toLowerCase().includes(q)
         ) return false;
       }
+
       return true;
     });
 
-    const total = filtered.length;
-    const pageNum = Math.max(1, filter.page || 1);
-    const limitNum = Math.min(50, Math.max(1, filter.limit || 12));
+    // ── Sort ──────────────────────────────────────────────────────────────
+    const sorted = [...filtered].sort((a, b) => {
+      if (sort === 'price_asc') return a.price - b.price;
+      if (sort === 'price_desc') return b.price - a.price;
+      if (sort === 'createdAt_asc') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
+    // ── Paginate ──────────────────────────────────────────────────────────
+    const total = sorted.length;
     const start = (pageNum - 1) * limitNum;
-    const paged = filtered.slice(start, start + limitNum);
+    const paged = sorted.slice(start, start + limitNum);
 
     ok(res, {
       data: paged,
@@ -180,7 +254,6 @@ router.delete('/:id', (req: Request, res: Response) => {
       notFound(res, '商品');
       return;
     }
-
     ok(res, updated, '商品已下架');
   } catch (err) {
     serverError(res, err);
