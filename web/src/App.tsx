@@ -75,6 +75,8 @@ export default function App() {
                       <Route path="/admin/warehouse" element={<AdminWarehouse />} />
                       <Route path="/finance" element={<Finance />} />
                       <Route path="/wishlist" element={<Wishlist />} />
+                      <Route path="/login" element={<Login />} />
+                      <Route path="/register" element={<Register />} />
 
                       {/* ── HK market (/hk) ───────────────────────────────── */}
                       <Route path="/hk" element={<HKHome />} />
@@ -93,6 +95,8 @@ export default function App() {
                       <Route path="/hk/admin/warehouse" element={<AdminWarehouse />} />
                       <Route path="/hk/finance" element={<Finance />} />
                       <Route path="/hk/wishlist" element={<Wishlist />} />
+                      <Route path="/hk/login" element={<Login />} />
+                      <Route path="/hk/register" element={<Register />} />
 
                       {/* ── CN market (/cn) ────────────────────────────────── */}
                       <Route path="/cn" element={<Home />} />
@@ -111,6 +115,8 @@ export default function App() {
                       <Route path="/cn/admin/warehouse" element={<AdminWarehouse />} />
                       <Route path="/cn/finance" element={<Finance />} />
                       <Route path="/cn/wishlist" element={<Wishlist />} />
+                      <Route path="/cn/login" element={<Login />} />
+                      <Route path="/cn/register" element={<Register />} />
                     </Routes>
                   </Suspense>
                 </main>

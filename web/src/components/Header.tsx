@@ -7,6 +7,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import { useCart } from '../hooks/useCart';
 import { useMarket } from '../hooks/useMarket';
+import { useAuth } from '../contexts/AuthContext';
 import type { Market } from '../types/market';
 import styles from './Header.module.css';
 import { useWishlist } from '../hooks/useWishlist';
@@ -73,6 +74,7 @@ export default function Header() {
   const { totalItems } = useCart();
   const { market, setMarket } = useMarket();
   const { count: wishlistCount } = useWishlist();
+  const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
@@ -130,6 +132,10 @@ export default function Header() {
     const prefix = market === 'UK' ? '' : `/${market.toLowerCase()}`;
     if (path === '/') return prefix || '/';
     return `${prefix}${path}`;
+  }
+
+  async function handleLogout() {
+    await logout();
   }
 
   function handleSearch(e: React.FormEvent) {
@@ -329,8 +335,21 @@ export default function Header() {
           </form>
         </div>
 
-        {/* ── Cart + Wishlist + Menu ─────────────────────────────────── */}
+        {/* ── Cart + Wishlist + Auth + Menu ────────────────────────────── */}
         <div className={styles.actions}>
+          {/* Auth */}
+          {!isAuthenticated ? (
+            <div className={styles.authLinks}>
+              <Link to={marketPath('/login')} className={styles.authLink}>登录</Link>
+              <Link to={marketPath('/register')} className={styles.authPrimary}>注册</Link>
+            </div>
+          ) : (
+            <div className={styles.authLinks}>
+              <span className={styles.userChip} title={user?.email}>{user?.name || '已登录'}</span>
+              <button type="button" className={styles.logoutBtn} onClick={handleLogout}>退出</button>
+            </div>
+          )}
+
           {/* Wishlist */}
           <Link to={marketPath('/wishlist')} className={styles.wishlistBtn} aria-label="Wishlist">
             <svg width="20" height="20" viewBox="0 0 24 24" fill={wishlistCount > 0 ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5">
