@@ -158,7 +158,7 @@ export function useAuth(): AuthContextValue {
   return ctx;
 }
 
-export function withAdminGuard<TProps>(Component: React.ComponentType<TProps>) {
+export function withAdminGuard<TProps extends object>(Component: React.ComponentType<TProps>) {
   return function AdminGuarded(props: TProps) {
     const { user, isLoading } = useAuth();
 
@@ -170,6 +170,6 @@ export function withAdminGuard<TProps>(Component: React.ComponentType<TProps>) {
       return <div className="empty-state"><h3>无权限</h3><p>请使用管理员账号登录。</p></div>;
     }
 
-    return <Component {...props} />;
+    return <Component {...(props as TProps)} />;
   };
 }

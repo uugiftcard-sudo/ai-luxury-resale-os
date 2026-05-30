@@ -7,7 +7,7 @@ import { productApi, orderApi } from '../api/client';
 import { useMarket } from '../hooks/useMarket';
 import type { Product, Order } from '../types';
 import { useToast } from '../hooks/useToast';
-import ConfirmModal from '../components/ConfirmModal';
+import ConfirmModal from '../components/ConfirmModal.tsx';
 import styles from './Admin.module.css';
 
 // ==================== 辅助函数 ====================
