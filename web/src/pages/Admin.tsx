@@ -7,7 +7,7 @@ import { productApi, orderApi } from '../api/client';
 import { useMarket } from '../hooks/useMarket';
 import type { Product, Order } from '../types';
 import { useToast } from '../hooks/useToast';
-import ConfirmModal from '../components/ConfirmModal.tsx';
+import { ConfirmModal } from '../components/ConfirmModal/ConfirmModal';
 import styles from './Admin.module.css';
 
 // ==================== 辅助函数 ====================
@@ -449,6 +449,7 @@ export default function Admin() {
 
       {pendingDelete && (
         <ConfirmModal
+          isOpen={true}
           title="确认下架商品"
           message={'确定要下架「' + pendingDelete.title + '」吗？下架后商品将从待售列表移除。'}
           confirmLabel="确认下架"
