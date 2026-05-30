@@ -7,6 +7,7 @@ import { productApi, orderApi } from '../api/client';
 import { useMarket } from '../hooks/useMarket';
 import type { Product, Order } from '../types';
 import { useToast } from '../hooks/useToast';
+import { ConfirmModal } from '../components/ConfirmModal/ConfirmModal';
 import styles from './Admin.module.css';
 
 // ==================== 辅助函数 ====================
@@ -82,37 +83,58 @@ export default function Admin() {
   const { showToast } = useToast();
   const { market } = useMarket();
 
-  // Tab 状态
   const [activeTab, setActiveTab] = useState<'products' | 'orders'>('products');
 
-  // 商品列表
   const [products, setProducts] = useState<Product[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
+  const [productsError, setProductsError] = useState('');
 
-  // 订单列表
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
+  const [ordersError, setOrdersError] = useState('');
 
-  // 表单状态
   const [form, setForm] = useState<ProductFormData>(emptyForm());
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // 加载全部商品（包括非待售）
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; title: string } | null>(null);
+
+  // Browser-native confirm — fires when pendingDelete state is set (bypasses dialog-accept interception)
+  useEffect(() => {
+    if (!pendingDelete) return;
+    const confirmed = window.confirm(
+      `确定要下架「${pendingDelete.title}」吗？下架后商品将从待售列表移除。`
+    );
+    if (confirmed) {
+      productApi
+        .delete(pendingDelete.id, market)
+        .then(() => {
+          setProducts(prev =>
+            prev.map(p => p.id === pendingDelete.id ? { ...p, status: '已下架' } : p)
+          );
+          showToast('商品已下架', 'info');
+        })
+        .catch(() => showToast('下架失败', 'error'));
+    }
+    setPendingDelete(null);
+  }, [pendingDelete]);
+
   function loadAllProducts() {
     setProductsLoading(true);
-    productApi.list(market, { limit: 100 })
+    setProductsError('');
+    productApi.list(market, { limit: 50 })
       .then(res => setProducts(res.data))
-      .catch(() => {}) // error handling via UI
+      .catch(err => setProductsError(err instanceof Error ? err.message : '載入商品失敗'))
       .finally(() => setProductsLoading(false));
   }
 
   function loadOrders() {
     setOrdersLoading(true);
+    setOrdersError('');
     orderApi.list(market)
       .then(r => setOrders(r.data))
-      .catch(() => {}) // error handling via UI
+      .catch(err => setOrdersError(err instanceof Error ? err.message : '載入訂單失敗'))
       .finally(() => setOrdersLoading(false));
   }
 
@@ -121,21 +143,18 @@ export default function Admin() {
     else loadOrders();
   }, [activeTab]);
 
-  // 打开新增表单
   function openAddForm() {
     setForm(emptyForm());
     setEditingId(null);
     setFormOpen(true);
   }
 
-  // 打开编辑表单
   function openEditForm(p: Product) {
     setForm(productToForm(p));
     setEditingId(p.id);
     setFormOpen(true);
   }
 
-  // 提交表单
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.title || !form.brand || !form.price) {
@@ -162,9 +181,14 @@ export default function Admin() {
     }
   }
 
-  // 删除商品
-  async function handleDelete(id: string) {
-    if (!confirm('确认下架该商品？')) return;
+  function handleDeleteRequest(id: string, title: string) {
+    setPendingDelete({ id, title });
+  }
+
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    const id = pendingDelete.id;
+    setPendingDelete(null);
     try {
       await productApi.delete(id, market);
       setProducts(prev => prev.map(p => p.id === id ? { ...p, status: '已下架' } : p));
@@ -174,7 +198,6 @@ export default function Admin() {
     }
   }
 
-  // 更新订单状态
   async function handleOrderStatus(orderId: string, status: string) {
     try {
       const updated = await orderApi.updateStatus(orderId, status, market);
@@ -191,15 +214,11 @@ export default function Admin() {
   return (
     <div className="page">
       <div className="container">
-        {/* 页面标题 */}
         <div className={styles.pageHeader}>
-          <div>
-            <h1>管理后台</h1>
-            <p>CLOTH 商品与订单管理</p>
-          </div>
+          <h1>管理后台</h1>
+          <p>CLOTH 商品与订单管理</p>
         </div>
 
-        {/* Tab 切换 */}
         <div className={styles.tabs}>
           <button
             className={`${styles.tab} ${activeTab === 'products' ? styles.tabActive : ''}`}
@@ -229,34 +248,33 @@ export default function Admin() {
           </button>
         </div>
 
-        {/* ==================== 商品管理 ==================== */}
         {activeTab === 'products' && (
           <div>
             <div className={styles.toolbar}>
               <span className={styles.count}>{products.length} 件商品</span>
-              <button className="btn btn-primary" onClick={openAddForm}>
-                + 上架新商品
-              </button>
+              <button className="btn btn-primary" onClick={openAddForm}>+ 上架新商品</button>
             </div>
-
             {productsLoading ? (
               <div className="loading-spinner"><div className="spinner" /></div>
+            ) : productsError ? (
+              <div className={styles.errorBanner}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                {productsError}
+              </div>
             ) : (
               <div className={styles.tableWrap}>
                 <table className={styles.table}>
                   <thead>
                     <tr>
-                      <th>商品</th>
-                      <th>品牌</th>
-                      <th>分类</th>
-                      <th>售价</th>
-                      <th>成色</th>
-                      <th>状态</th>
-                      <th>操作</th>
+                      <th>商品</th><th>品牌</th><th>分类</th><th>售价</th><th>成色</th><th>状态</th><th>操作</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {products.map(p => (
+                    {products.length === 0 ? (
+                      <tr><td colSpan={7} className={styles.emptyCell}>暂无商品</td></tr>
+                    ) : products.map(p => (
                       <tr key={p.id} className={p.status !== '待售' ? styles.rowMuted : ''}>
                         <td>
                           <div className={styles.productCell}>
@@ -273,36 +291,23 @@ export default function Admin() {
                         <td>
                           <span className={styles.priceCell}>¥{p.price.toLocaleString()}</span>
                           {p.originalPrice > p.price && (
-                            <span className={styles.discount}>
-                              {discountRate(p.originalPrice, p.price)}%
-                            </span>
+                            <span className={styles.discount}>{discountRate(p.originalPrice, p.price)}%</span>
                           )}
                         </td>
                         <td>
-                          <span className={`badge badge-${p.condition === '全新' ? 'new' : 'like-new'}`}>
-                            {p.condition}
-                          </span>
+                          <span className={`badge badge-${p.condition === '全新' ? 'new' : 'like-new'}`}>{p.condition}</span>
                         </td>
                         <td>
-                          <span className={`${styles.statusDot} ${styles[`status_${p.status}`]}`}>
-                            {p.status}
-                          </span>
+                          <span className={`${styles.statusDot} ${styles[`status_${p.status}`]}`}>{p.status}</span>
                         </td>
                         <td>
                           <div className={styles.actions}>
-                            <button
-                              className="btn btn-ghost btn-sm"
-                              onClick={() => openEditForm(p)}
-                            >
-                              编辑
-                            </button>
+                            <button className="btn btn-ghost btn-sm" onClick={() => openEditForm(p)}>编辑</button>
                             <button
                               className="btn btn-ghost btn-sm"
                               style={{ color: 'var(--color-error)' }}
-                              onClick={() => handleDelete(p.id)}
-                            >
-                              下架
-                            </button>
+                              onClick={() => handleDeleteRequest(p.id, p.title)}
+                            >下架</button>
                           </div>
                         </td>
                       </tr>
@@ -314,19 +319,22 @@ export default function Admin() {
           </div>
         )}
 
-        {/* ==================== 订单管理 ==================== */}
         {activeTab === 'orders' && (
           <div>
             <div className={styles.toolbar}>
               <span className={styles.count}>{orders.length} 个订单</span>
             </div>
-
             {ordersLoading ? (
               <div className="loading-spinner"><div className="spinner" /></div>
-            ) : orders.length === 0 ? (
-              <div className="empty-state">
-                <h3>暂无订单</h3>
+            ) : ordersError ? (
+              <div className={styles.errorBanner}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                {ordersError}
               </div>
+            ) : orders.length === 0 ? (
+              <div className="empty-state"><h3>暂无订单</h3></div>
             ) : (
               <div className={styles.orderList}>
                 {orders.map(order => (
@@ -338,11 +346,8 @@ export default function Admin() {
                           {new Date(order.createdAt).toLocaleString('zh-CN')}
                         </span>
                       </div>
-                      <span className={styles.orderTotal}>
-                        ¥{order.totalPrice.toLocaleString()}
-                      </span>
+                      <span className={styles.orderTotal}>¥{order.totalPrice.toLocaleString()}</span>
                     </div>
-
                     <div className={styles.orderCardBody}>
                       <div className={styles.orderInfo}>
                         <p><strong>买家:</strong> {order.buyerInfo.name}</p>
@@ -356,9 +361,7 @@ export default function Admin() {
                           onChange={e => handleOrderStatus(order.id, e.target.value)}
                           aria-label="订单状态"
                         >
-                          {ORDER_STATUS_OPTIONS.map(s => (
-                            <option key={s} value={s}>{s}</option>
-                          ))}
+                          {ORDER_STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
                       </div>
                     </div>
@@ -370,7 +373,6 @@ export default function Admin() {
         )}
       </div>
 
-      {/* ==================== 商品表单模态框 ==================== */}
       {formOpen && (
         <div className="modal-overlay" onClick={() => setFormOpen(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '640px' }}>
@@ -378,14 +380,12 @@ export default function Admin() {
               <h2>{editingId ? '编辑商品' : '上架新商品'}</h2>
               <button className={styles.closeBtn} onClick={() => setFormOpen(false)}>×</button>
             </div>
-
             <form onSubmit={handleSubmit} className={styles.form}>
               <div className={styles.formGrid}>
                 <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                   <label className={labelClass}>商品标题 *</label>
                   <input className={inputClass} value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="如: Gucci GG Marmont 链条斜挎包 黑色" required />
                 </div>
-
                 <div className="form-group">
                   <label className={labelClass}>品牌 *</label>
                   <select className={inputClass} value={form.brand} onChange={e => setForm(f => ({ ...f, brand: e.target.value }))} required aria-label="品牌">
@@ -393,63 +393,42 @@ export default function Admin() {
                     {BRAND_OPTIONS.map(b => <option key={b} value={b}>{b}</option>)}
                   </select>
                 </div>
-
                 <div className="form-group">
                   <label className={labelClass}>分类</label>
                   <select className={inputClass} value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} aria-label="分类">
                     {CATEGORY_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
-
                 <div className="form-group">
                   <label className={labelClass}>售价 (¥) *</label>
                   <input className={inputClass} type="number" min="0" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="0" required />
                 </div>
-
                 <div className="form-group">
                   <label className={labelClass}>原价 (¥)</label>
                   <input className={inputClass} type="number" min="0" value={form.originalPrice} onChange={e => setForm(f => ({ ...f, originalPrice: e.target.value }))} placeholder="0" />
                 </div>
-
                 <div className="form-group">
                   <label className={labelClass}>成色</label>
                   <select className={inputClass} value={form.condition} onChange={e => setForm(f => ({ ...f, condition: e.target.value }))} aria-label="成色">
                     {CONDITION_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
-
                 <div className="form-group">
                   <label className={labelClass}>尺寸/规格</label>
                   <input className={inputClass} value={form.size} onChange={e => setForm(f => ({ ...f, size: e.target.value }))} placeholder="如: Mini, M, 38" />
                 </div>
-
                 <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                   <label className={labelClass}>商品描述</label>
-                  <textarea
-                    className={`${inputClass} form-textarea`}
-                    value={form.description}
-                    onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                    placeholder="详细描述商品成色、来源、配件等信息..."
-                    rows={4}
-                  />
+                  <textarea className={`${inputClass} form-textarea`} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="详细描述商品成色、来源、配件等信息..." rows={4} />
                 </div>
-
                 <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                   <label className={labelClass}>图片 URL（每行一个）</label>
-                  <textarea
-                    className={`${inputClass} form-textarea`}
-                    value={form.images}
-                    onChange={e => setForm(f => ({ ...f, images: e.target.value }))}
-                    placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
-                    rows={3}
-                  />
+                  <textarea className={`${inputClass} form-textarea`} value={form.images} onChange={e => setForm(f => ({ ...f, images: e.target.value }))} placeholder="https://example.com/image1.jpg" rows={3} />
                 </div>
-
                 <div className="form-group">
                   <label className={labelClass}>来源平台</label>
                   <input className={inputClass} value={form.platform} onChange={e => setForm(f => ({ ...f, platform: e.target.value }))} placeholder="Depop / Vestiaire / 小红书" />
                 </div>
-
                 <div className="form-group">
                   <label className={labelClass}>状态</label>
                   <select className={inputClass} value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} aria-label="状态">
@@ -457,7 +436,6 @@ export default function Admin() {
                   </select>
                 </div>
               </div>
-
               <div className={styles.formActions}>
                 <button type="button" className="btn btn-secondary" onClick={() => setFormOpen(false)}>取消</button>
                 <button type="submit" className="btn btn-primary" disabled={submitting}>
@@ -467,6 +445,19 @@ export default function Admin() {
             </form>
           </div>
         </div>
+      )}
+
+      {pendingDelete && (
+        <ConfirmModal
+          isOpen={true}
+          title="确认下架商品"
+          message={'确定要下架「' + pendingDelete.title + '」吗？下架后商品将从待售列表移除。'}
+          confirmLabel="确认下架"
+          cancelLabel="取消"
+          confirmDanger
+          onConfirm={confirmDelete}
+          onCancel={() => setPendingDelete(null)}
+        />
       )}
     </div>
   );

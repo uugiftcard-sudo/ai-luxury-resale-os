@@ -10,6 +10,7 @@ import { useMarket } from '../hooks/useMarket';
 import type { Market } from '../types/market';
 import styles from './Header.module.css';
 import { useWishlist } from '../hooks/useWishlist';
+import { useAuth } from '../contexts/AuthContext';
 
 // ── Market flag + label config ───────────────────────────────────────────────
 const MARKET_OPTIONS: { value: Market; flag: string; label: string; url: string }[] = [
@@ -73,6 +74,7 @@ export default function Header() {
   const { totalItems } = useCart();
   const { market, setMarket } = useMarket();
   const { count: wishlistCount } = useWishlist();
+  const { user, logout, isLoading } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
@@ -285,6 +287,37 @@ export default function Header() {
           <Link to={marketPath('/products')} onClick={closeMenu} className={styles.mobileNavOnly}>
             {market === 'UK' ? 'Products' : '全部商品'}
           </Link>
+
+          {/* Auth */}
+          {!isLoading && !user && (
+            <>
+              <Link to={marketPath('/login')} onClick={closeMenu}>
+                {market === 'UK' ? 'Login' : '登录'}
+              </Link>
+              <Link to={marketPath('/register')} onClick={closeMenu}>
+                {market === 'UK' ? 'Register' : '注册'}
+              </Link>
+            </>
+          )}
+          {!isLoading && user && (
+            <>
+              <span className={styles.navSectionLabel}>
+                {market === 'UK' ? `Hi, ${user.name}` : `你好，${user.name}`}
+              </span>
+              <button
+                type="button"
+                className={styles.navTextButton}
+                onClick={async () => {
+                  await logout();
+                  closeMenu();
+                  navigate(marketPath('/'));
+                }}
+              >
+                {market === 'UK' ? 'Logout' : '退出登录'}
+              </button>
+            </>
+          )}
+
           {CATEGORY_LINKS[market].map(cat => (
             (cat.param || !menuOpen) && (
             <Link key={cat.label} to={cat.param ? marketPath(`/products?category=${encodeURIComponent(cat.param)}`) : marketPath('/products')} onClick={closeMenu}>
