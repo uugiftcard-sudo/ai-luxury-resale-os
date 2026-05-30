@@ -12,9 +12,12 @@ const FOOTER_COPY: Record<string, {
   categoryTitle: string;
   brandTitle: string;
   aboutTitle: string;
+  brand: string;
   categories: { label: string; href: string }[];
   brands: { label: string; href: string }[];
-  about: { label: string; href: string }[];
+  about: { label: string; href: string; comingSoon?: boolean }[];
+  socialTitle: string;
+  socials: { label: string; href: string; comingSoon?: boolean; icon: 'xiaohongshu' | 'wechat' }[];
   copyright: string;
   legal: string;
 }> = {
@@ -24,6 +27,7 @@ const FOOTER_COPY: Record<string, {
     categoryTitle: 'Shop',
     brandTitle: 'Brands',
     aboutTitle: 'Company',
+    brand: 'CLOTH',
     categories: [
       { label: 'All Products', href: '/products' },
       { label: 'Bags', href: '/products?category=包袋' },
@@ -39,14 +43,17 @@ const FOOTER_COPY: Record<string, {
       { label: 'Hermès', href: '/products?brand=Herm%C3%A8s' },
     ],
     about: [
-      { label: 'About Us', href: '#' },
-      { label: 'Support', href: '/support' },
-      { label: 'Authentication Process', href: '#' },
-      { label: 'Delivery & Returns', href: '#' },
-      { label: 'Privacy Policy', href: '#' },
-      { label: 'Contact Us', href: '#' },
-      { label: 'Admin', href: '/admin' },
-      { label: 'Warehouse', href: '/admin/warehouse' },
+      { label: 'About Us', href: '/about', comingSoon: false },
+      { label: 'Authentication Process', href: '/authentication', comingSoon: false },
+      { label: 'Delivery & Returns', href: '/delivery', comingSoon: false },
+      { label: 'Privacy Policy', href: '/privacy', comingSoon: false },
+      { label: 'Contact Us', href: '/contact', comingSoon: false },
+      { label: 'Support Centre', href: '/support', comingSoon: false },
+    ],
+    socialTitle: 'Follow Us',
+    socials: [
+      { label: '小红书', href: '#', comingSoon: true, icon: 'xiaohongshu' },
+      { label: 'WeChat', href: '#', comingSoon: true, icon: 'wechat' },
     ],
     copyright: `© ${new Date().getFullYear()} CLOTH UK. All rights reserved.`,
     legal: 'All items are pre-owned. Please refer to individual product listings for condition details.',
@@ -57,6 +64,7 @@ const FOOTER_COPY: Record<string, {
     categoryTitle: '商品分類',
     brandTitle: '熱門品牌',
     aboutTitle: '關於我們',
+    brand: 'CLOTH',
     categories: [
       { label: '全部商品', href: '/hk/products' },
       { label: '袋款', href: '/hk/products?category=包袋' },
@@ -72,14 +80,17 @@ const FOOTER_COPY: Record<string, {
       { label: 'Hermès', href: '/hk/products?brand=Herm%C3%A8s' },
     ],
     about: [
-      { label: '關於我們', href: '#' },
-      { label: '客戶服務', href: '/hk/support' },
-      { label: '正品保障', href: '#' },
-      { label: '送貨與退換', href: '#' },
-      { label: '隱私政策', href: '#' },
-      { label: '聯絡我們', href: '#' },
-      { label: '管理後台', href: '/hk/admin' },
-      { label: '倉庫後台', href: '/hk/admin/warehouse' },
+      { label: '關於我們', href: '/hk/about', comingSoon: false },
+      { label: '正品保障', href: '/hk/authentication', comingSoon: false },
+      { label: '送貨與退換', href: '/hk/delivery', comingSoon: false },
+      { label: '隱私政策', href: '/hk/privacy', comingSoon: false },
+      { label: '聯絡我們', href: '/hk/contact', comingSoon: false },
+      { label: '客戶服務', href: '/hk/support', comingSoon: false },
+    ],
+    socialTitle: '關注我們',
+    socials: [
+      { label: '小紅書', href: '#', comingSoon: true, icon: 'xiaohongshu' },
+      { label: '微信', href: '#', comingSoon: true, icon: 'wechat' },
     ],
     copyright: `© ${new Date().getFullYear()} CLOTH HK. 保留所有權利。`,
     legal: '本平台商品圖片僅供展示，請以實物為準。',
@@ -90,6 +101,7 @@ const FOOTER_COPY: Record<string, {
     categoryTitle: '商品分类',
     brandTitle: '热门品牌',
     aboutTitle: '关于 CLOTH',
+    brand: 'CLOTH',
     categories: [
       { label: '全部商品', href: '/cn/products' },
       { label: '包袋', href: '/cn/products?category=包袋' },
@@ -105,18 +117,46 @@ const FOOTER_COPY: Record<string, {
       { label: 'Hermès', href: '/cn/products?brand=Herm%C3%A8s' },
     ],
     about: [
-      { label: '关于我们', href: '#' },
-      { label: '客户服务', href: '/cn/support' },
-      { label: '正品保障', href: '#' },
-      { label: '交易流程', href: '#' },
-      { label: '隐私条款', href: '#' },
-      { label: '帮助中心', href: '#' },
-      { label: '管理后台', href: '/cn/admin' },
-      { label: '仓库后台', href: '/cn/admin/warehouse' },
+      { label: '关于我们', href: '/cn/about', comingSoon: false },
+      { label: '正品保障', href: '/cn/authentication', comingSoon: false },
+      { label: '配送与退换', href: '/cn/delivery', comingSoon: false },
+      { label: '隐私条款', href: '/cn/privacy', comingSoon: false },
+      { label: '联系我们', href: '/cn/contact', comingSoon: false },
+      { label: '帮助中心', href: '/cn/support', comingSoon: false },
+    ],
+    socialTitle: '关注我们',
+    socials: [
+      { label: '小红书', href: '#', comingSoon: true, icon: 'xiaohongshu' },
+      { label: '微信', href: '#', comingSoon: true, icon: 'wechat' },
     ],
     copyright: `© ${new Date().getFullYear()} CLOTH. 让奢品循环新生`,
     legal: '本平台商品图片仅供展示，请以实物为准',
   },
+};
+
+function XiaohongshuIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="3" y="3" width="18" height="18" rx="3" fill="currentColor" opacity="0.15" />
+      <path d="M7 8h10M7 12h6M7 16h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function WechatIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M8 10.5C8 9.12 9.34 8 10.5 8C11.66 8 13 9.12 13 10.5C13 11.88 11.66 13 10.5 13C9.34 13 8 11.88 8 10.5Z" fill="currentColor" />
+      <path d="M12 10.5C12 9.12 13.34 8 14.5 8C15.66 8 17 9.12 17 10.5C17 11.88 15.66 13 14.5 13C13.34 13 12 11.88 12 10.5Z" fill="currentColor" />
+      <path d="M12 15C9.5 15 4 16.5 4 19V21H20V19C20 16.5 14.5 15 12 15Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M17 8C17 8 18.5 9 19 10C19.5 11 19 12 19 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+const SOCIAL_ICONS: Record<string, () => JSX.Element> = {
+  xiaohongshu: XiaohongshuIcon,
+  wechat: WechatIcon,
 };
 
 export default function Footer() {
@@ -129,20 +169,38 @@ export default function Footer() {
         <div className={styles.top}>
           {/* 品牌区 */}
           <div className={styles.brand}>
-            <div className={styles.logoMark}>CLOTH</div>
+            <div className={styles.logoMark}>{t.brand}</div>
             <p className={styles.tagline}>{t.tagline}</p>
             <p className={styles.description}>{t.description}</p>
             <div className={styles.socials}>
-              <a href="#" aria-label="小红书" className={styles.socialIcon}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/>
-                </svg>
-              </a>
-              <a href="#" aria-label="微信" className={styles.socialIcon}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M8.5 11c-.83 0-1.5.67-1.5 1.5S7.67 14 8.5 14s1.5-.67 1.5-1.5S9.33 11 8.5 11zm7 0c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zM20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8l8 5 8-5v10z"/>
-                </svg>
-              </a>
+              <span className={styles.socialsLabel}>{t.socialTitle}</span>
+              {t.socials.map((social) => {
+                const SocialIcon = SOCIAL_ICONS[social.icon];
+                if (social.comingSoon) {
+                  return (
+                    <span
+                      key={social.icon}
+                      className={styles.socialIconDisabled}
+                      title="即將推出"
+                      data-testid={`footer-social-${social.icon}-disabled`}
+                    >
+                      <SocialIcon />
+                    </span>
+                  );
+                }
+                return (
+                  <a
+                    key={social.icon}
+                    href={social.href}
+                    className={styles.socialIcon}
+                    title={social.label}
+                    aria-label={social.label}
+                    data-testid={`footer-social-${social.icon}`}
+                  >
+                    <SocialIcon />
+                  </a>
+                );
+              })}
             </div>
           </div>
 
@@ -150,32 +208,43 @@ export default function Footer() {
           <div className={styles.links}>
             <div className={styles.linkGroup}>
               <h4>{t.categoryTitle}</h4>
-              {t.categories.map(item => (
+              {t.categories.map((item) => (
                 <Link key={item.href} to={item.href}>{item.label}</Link>
               ))}
             </div>
             <div className={styles.linkGroup}>
               <h4>{t.brandTitle}</h4>
-              {t.brands.map(item => (
+              {t.brands.map((item) => (
                 <Link key={item.href} to={item.href}>{item.label}</Link>
               ))}
             </div>
             <div className={styles.linkGroup}>
               <h4>{t.aboutTitle}</h4>
-              {t.about.map(item => (
-                item.href.startsWith('/') ? (
-                  <Link key={`${item.label}-${item.href}`} to={item.href}>{item.label}</Link>
-                ) : (
-                  <a key={`${item.label}-${item.href}`} href={item.href}>{item.label}</a>
-                )
-              ))}
+              {t.about.map((item) => {
+                if (item.comingSoon) {
+                  return (
+                    <span key={`${item.label}-${item.href}`} className={styles.comingSoon} title="即將推出">
+                      {item.label}
+                    </span>
+                  );
+                }
+                return (
+                  <Link
+                    key={`${item.label}-${item.href}`}
+                    to={item.href}
+                    data-testid={`footer-link-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </div>
 
         <div className={styles.bottom}>
-          <p>{t.copyright}</p>
-          <p className={styles.legal}>{t.legal}</p>
+          <p data-testid="footer-copyright">{t.copyright}</p>
+          <p className={styles.legal} data-testid="footer-legal">{t.legal}</p>
         </div>
       </div>
     </footer>

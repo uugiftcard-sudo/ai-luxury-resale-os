@@ -26,6 +26,12 @@
   margin-bottom: var(--space-xl);
 }
 
+.tabItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .tab {
   display: flex;
   align-items: center;
@@ -60,6 +66,25 @@
   padding: 2px 7px;
   border-radius: var(--radius-full);
   font-weight: 600;
+  margin-left: 6px;
+}
+
+.errorBanner {
+  padding: 16px;
+  background: rgba(198, 40, 40, 0.08);
+  border: 1.5px solid #c62828;
+  border-radius: var(--radius-md);
+  color: #c62828;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: var(--space-lg);
+}
+
+.emptyCell {
+  text-align: center;
+  padding: var(--space-xl);
+  color: var(--color-text-muted);
 }
 
 .tabActive .badge {

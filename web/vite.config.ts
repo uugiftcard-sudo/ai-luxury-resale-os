@@ -15,6 +15,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom', 'react-router-dom'],
+          'html2canvas': ['html2canvas'],
         },
       },
     },
@@ -23,7 +24,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:3005',
+        target: 'http://localhost:3001',
         changeOrigin: true,
       },
     },
