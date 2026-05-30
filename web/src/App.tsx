@@ -7,6 +7,7 @@ import { ToastProvider } from './hooks/useToast';
 import { MarketProvider } from './hooks/useMarket';
 import { SupportProvider } from './contexts/SupportContext';
 import { InventoryProvider } from './contexts/InventoryContext';
+import { AuthProvider } from './contexts/AuthContext';
 
 const Home = lazy(() => import('./pages/Home'));
 const UKHome = lazy(() => import('./pages/UKHome'));
@@ -26,6 +27,8 @@ const Inventory = lazy(() => import('./pages/Inventory'));
 const AdminWarehouse = lazy(() => import('./pages/AdminWarehouse'));
 const Finance = lazy(() => import('./pages/Finance'));
 const Wishlist = lazy(() => import('./pages/Wishlist'));
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
 
 function PageLoader() {
   return (
@@ -50,10 +53,11 @@ export default function App() {
           <MarketProvider>
             <SupportProvider>
               <InventoryProvider>
-                <Header />
-                <main>
-                  <Suspense fallback={<PageLoader />}>
-                    <Routes>
+                <AuthProvider>
+                  <Header />
+                  <main>
+                    <Suspense fallback={<PageLoader />}>
+                      <Routes>
                       {/* ── UK market (default /) ─────────────────────────── */}
                       <Route path="/" element={<UKHome />} />
                       <Route path="/about" element={<About />} />
@@ -111,6 +115,7 @@ export default function App() {
                   </Suspense>
                 </main>
                 <Footer />
+                </AuthProvider>
               </InventoryProvider>
             </SupportProvider>
           </MarketProvider>
