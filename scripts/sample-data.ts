@@ -1,5 +1,12 @@
-import type { CustomerProfile, LiveSession, OrderRecord, Product, ProofPack, SourcingLead } from "@luxury/db";
-import { seedAll } from "@luxury/db";
+import type {
+  CustomerProfile,
+  LiveSession,
+  OrderRecord,
+  Product,
+  ProofPack,
+  SourcingLead,
+} from "@luxury/db";
+import { customers, liveSessions, seedAll } from "@luxury/db";
 
 export { sampleProducts, sampleProofPacks, sampleSourcingLeads, sampleOrders, sampleLiveSessions, sampleCustomers };
 
@@ -218,9 +225,15 @@ const sampleCustomers: CustomerProfile[] = [
 
 export function seedToDb(): void {
   seedAll(sampleProducts, sampleProofPacks, sampleSourcingLeads, sampleOrders);
+  sampleCustomers.forEach((c) => customers.upsert(c));
+  sampleLiveSessions.forEach((s) => liveSessions.upsert(s));
   console.log(
-    "Seeded: products=%d, proofPacks=%d, leads=%d, orders=%d",
-    sampleProducts.length, sampleProofPacks.length,
-    sampleSourcingLeads.length, sampleOrders.length
+    "Seeded: products=%d, proofPacks=%d, leads=%d, orders=%d, customers=%d, liveSessions=%d",
+    sampleProducts.length,
+    sampleProofPacks.length,
+    sampleSourcingLeads.length,
+    sampleOrders.length,
+    sampleCustomers.length,
+    sampleLiveSessions.length
   );
 }
