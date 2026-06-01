@@ -87,7 +87,7 @@ export async function executeWhatsAppTask(
   const isMock = !config.accessToken;
 
   const payload = task.payload as Partial<WhatsAppPayload>;
-  const market = payload.market ?? task.market;
+  const market = task.market;
   const recipient =
     payload.toGroup ?? config.vipGroups[market] ?? "";
 

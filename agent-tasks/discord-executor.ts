@@ -15,7 +15,8 @@
  *   DISCORD_ALERTS_CHANNEL    — Escalations & risk alerts
  *   DISCORD_REPORTS_CHANNEL   — Daily cycle reports
  */
-import type { ExecutionTask, ExecutionResult, DiscordPostPayload } from "./execution-types.js";
+import type { ExecutionTask, ExecutionResult } from "./execution-types.js";
+import type { DiscordPostPayload } from "./task-factory.js";
 
 interface DiscordConfig {
   botToken: string;
@@ -87,7 +88,7 @@ function snowflakeTime(id: string): Date {
 
 // ── Channel message builder ───────────────────────────────────────────────────
 
-function productEmbed(payload: DiscordPostPayload, taskId: string): unknown {
+function productEmbed(payload: Partial<DiscordPostPayload>, taskId: string): unknown {
   return {
     title: `📦 New Listing — ${payload.market}`,
     description: payload.content,
@@ -97,10 +98,13 @@ function productEmbed(payload: DiscordPostPayload, taskId: string): unknown {
   };
 }
 
-function escalationEmbed(payload: DiscordPostPayload, taskId: string): unknown {
+function escalationEmbed(payload: Partial<DiscordPostPayload>, taskId: string): unknown {
   return {
     title: `🚨 Escalation Alert`,
     description: payload.content,
+  };
+}
+
 // ── Public API ───────────────────────────────────────────────────────────────
 
 export interface DiscordExecutorResult {

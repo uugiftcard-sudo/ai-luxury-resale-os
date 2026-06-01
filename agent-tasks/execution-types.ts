@@ -1,5 +1,7 @@
 // ── Execution types ────────────────────────────────────────────────────────────
 
+import { AgentId } from "./types.js";
+
 /** Platform identifier */
 export type ExecutorPlatform =
   | "discord"
@@ -58,3 +60,4 @@ export interface ExecutionRunResult {
 }
 
 export { type AgentId } from "./types.js";
+export type { ListingTask, ContentTask, SourcingQueueItem, RiskAlert } from "./types.js";

@@ -227,7 +227,7 @@ export async function fetchStoreData(market?: Market): Promise<StoreData> {
       : sampleProofPacks,
     sourcingLeads: allLeads,
     orders: [],
-    source: scrapedLeads.length > 0 ? "sample+scraped" : "sample",
+    source: (scrapedLeads.length > 0 ? "sample+scraped" : "sample") as "sample" | "api",
   };
 }
 

@@ -34,6 +34,9 @@ import {
   executeShopifyListing,
 } from "./listing-executor.js";
 
+interface ApprovalRecord {
+  taskId: string;
+  approvedAt: string;
   approvedBy: string;
 }
 
@@ -125,7 +128,7 @@ export class ExecutionEngine {
       // Dry run
       if (this.config.dryRun) {
         const msg = `[DRY RUN] Would execute: ${task.platform} — ${task.summary}`;
-        console.log(`  📝 ${c(DIM, msg)}`);
+        console.log(`  📝 ${msg}`);
         results.push({
           taskId: task.id,
           ok: true,
