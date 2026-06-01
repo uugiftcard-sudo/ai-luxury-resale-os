@@ -103,24 +103,24 @@ function InboundForm({ t, onSuccess }: { t: typeof COPY.CN; onSuccess: () => voi
       <h3 className={styles.formTitle}>{t.inbound.title}</h3>
       <div className={styles.formGrid}>
         <div className={styles.formGroup}>
-          <label className={styles.label}>{t.inbound.productName} *</label>
-          <input className={styles.input} value={form.productName} onChange={e => setForm(f => ({ ...f, productName: e.target.value }))} required />
+          <label className={styles.label} htmlFor="inventory-inbound-product">{t.inbound.productName} *</label>
+          <input id="inventory-inbound-product" className={styles.input} value={form.productName} onChange={e => setForm(f => ({ ...f, productName: e.target.value }))} required />
         </div>
         <div className={styles.formGroup}>
-          <label className={styles.label}>{t.inbound.quantity} *</label>
-          <input type="number" className={styles.input} min={1} value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: parseInt(e.target.value) }))} required />
+          <label className={styles.label} htmlFor="inventory-inbound-quantity">{t.inbound.quantity} *</label>
+          <input id="inventory-inbound-quantity" type="number" className={styles.input} min={1} value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: parseInt(e.target.value) }))} required />
         </div>
         <div className={styles.formGroup}>
-          <label className={styles.label}>{t.inbound.referenceNo}</label>
-          <input className={styles.input} value={form.referenceNo} onChange={e => setForm(f => ({ ...f, referenceNo: e.target.value }))} />
+          <label className={styles.label} htmlFor="inventory-inbound-reference">{t.inbound.referenceNo}</label>
+          <input id="inventory-inbound-reference" className={styles.input} value={form.referenceNo} onChange={e => setForm(f => ({ ...f, referenceNo: e.target.value }))} />
         </div>
         <div className={styles.formGroup}>
-          <label className={styles.label}>{t.inbound.operator}</label>
-          <input className={styles.input} value={form.operator} onChange={e => setForm(f => ({ ...f, operator: e.target.value }))} />
+          <label className={styles.label} htmlFor="inventory-inbound-operator">{t.inbound.operator}</label>
+          <input id="inventory-inbound-operator" className={styles.input} value={form.operator} onChange={e => setForm(f => ({ ...f, operator: e.target.value }))} />
         </div>
         <div className={`${styles.formGroup} ${styles.fullWidth}`}>
-          <label className={styles.label}>{t.inbound.notes}</label>
-          <input className={styles.input} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+          <label className={styles.label} htmlFor="inventory-inbound-notes">{t.inbound.notes}</label>
+          <input id="inventory-inbound-notes" className={styles.input} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
         </div>
       </div>
       {success && <div className={styles.successBanner}>{t.inbound.success}</div>}
@@ -160,27 +160,27 @@ function OutboundForm({ t, onSuccess }: { t: typeof COPY.CN; onSuccess: () => vo
       <h3 className={styles.formTitle}>{t.outbound.title}</h3>
       <div className={styles.formGrid}>
         <div className={styles.formGroup}>
-          <label className={styles.label}>{t.outbound.selectItem} *</label>
-          <select className={styles.select} value={form.inventoryId} onChange={e => setForm(f => ({ ...f, inventoryId: e.target.value }))} required>
+          <label className={styles.label} htmlFor="inventory-outbound-item">{t.outbound.selectItem} *</label>
+          <select id="inventory-outbound-item" className={styles.select} value={form.inventoryId} onChange={e => setForm(f => ({ ...f, inventoryId: e.target.value }))} required>
             <option value="">-- {t.outbound.selectItem} --</option>
             {items.map(i => <option key={i.id} value={i.id}>{i.sku} — {i.productName} (库存: {i.currentStock})</option>)}
           </select>
         </div>
         <div className={styles.formGroup}>
-          <label className={styles.label}>{t.outbound.quantity} *</label>
-          <input type="number" className={styles.input} min={1} value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: parseInt(e.target.value) }))} required />
+          <label className={styles.label} htmlFor="inventory-outbound-quantity">{t.outbound.quantity} *</label>
+          <input id="inventory-outbound-quantity" type="number" className={styles.input} min={1} value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: parseInt(e.target.value) }))} required />
         </div>
         <div className={styles.formGroup}>
-          <label className={styles.label}>{t.outbound.referenceNo}</label>
-          <input className={styles.input} value={form.referenceNo} onChange={e => setForm(f => ({ ...f, referenceNo: e.target.value }))} />
+          <label className={styles.label} htmlFor="inventory-outbound-reference">{t.outbound.referenceNo}</label>
+          <input id="inventory-outbound-reference" className={styles.input} value={form.referenceNo} onChange={e => setForm(f => ({ ...f, referenceNo: e.target.value }))} />
         </div>
         <div className={styles.formGroup}>
-          <label className={styles.label}>{t.outbound.operator}</label>
-          <input className={styles.input} value={form.operator} onChange={e => setForm(f => ({ ...f, operator: e.target.value }))} />
+          <label className={styles.label} htmlFor="inventory-outbound-operator">{t.outbound.operator}</label>
+          <input id="inventory-outbound-operator" className={styles.input} value={form.operator} onChange={e => setForm(f => ({ ...f, operator: e.target.value }))} />
         </div>
         <div className={`${styles.formGroup} ${styles.fullWidth}`}>
-          <label className={styles.label}>{t.outbound.notes}</label>
-          <input className={styles.input} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+          <label className={styles.label} htmlFor="inventory-outbound-notes">{t.outbound.notes}</label>
+          <input id="inventory-outbound-notes" className={styles.input} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
         </div>
       </div>
       {error && <div className={styles.errorBanner}>{error}</div>}
@@ -191,14 +191,14 @@ function OutboundForm({ t, onSuccess }: { t: typeof COPY.CN; onSuccess: () => vo
 }
 
 // ── Main ────────────────────────────────────────────────────────────────────────
-/** Local demo banner */
-function DemoBanner() {
+/** Backend sync banner */
+function BackendBanner() {
   return (
     <div className={styles.demoBanner}>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
       </svg>
-      <span>此頁面為瀏覽器本地演示（localStorage），數據不會同步至服務器。如需正式功能，請聯絡管理員。</span>
+      <span>此頁面已連接後端 Inventory API；新增、入庫、出庫會同步至服務器 SQLite store。</span>
     </div>
   );
 }
@@ -226,7 +226,7 @@ export default function Inventory() {
       </div>
 
       <div className={styles.container}>
-        <DemoBanner />
+        <BackendBanner />
 
         {/* Stats */}
         <div className={styles.statsGrid}>

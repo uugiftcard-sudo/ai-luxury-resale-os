@@ -1,79 +1,100 @@
 /**
- * Support API — routes requests through mockStorage or Supabase.
- * Swap MOCK_MODE in supabase.ts to switch to real backend.
+ * Support API — backed by the Express `/api/support` routes.
  */
-import {
-  supportStorage,
-  StoredTicket,
-} from '../lib/mockStorage';
 import type {
   SupportTicket,
   SupportTicketFormData,
   SupportMessage,
+  SupportFAQ,
 } from '../types/support';
 
-function toTicket(s: StoredTicket): SupportTicket {
+type ApiEnvelope<T> = {
+  success?: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+};
+
+type ApiMessage = Omit<SupportMessage, 'sender'> & {
+  author?: 'customer' | 'agent';
+  authorName?: string;
+};
+
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const res = await fetch(`/api${path}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+    ...options,
+  });
+  const body = (await res.json()) as ApiEnvelope<T>;
+  if (!res.ok || body.success === false) {
+    throw new Error(body.error || body.message || `Support request failed (${res.status})`);
+  }
+  return body.data as T;
+}
+
+function normalizeMessage(message: ApiMessage): SupportMessage {
   return {
-    id: s.id,
-    ticketNo: s.ticketNo,
-    type: s.type,
-    status: s.status,
-    subject: s.subject,
-    description: s.description,
-    orderId: s.orderId,
-    priority: s.priority,
-    customerName: s.customerName,
-    customerEmail: s.customerEmail,
-    customerPhone: s.customerPhone,
-    adminReply: s.adminReply,
-    createdAt: s.createdAt,
-    updatedAt: s.updatedAt,
+    id: message.id,
+    ticketId: message.ticketId,
+    sender: message.author === 'agent' ? 'admin' : 'customer',
+    message: message.message,
+    createdAt: message.createdAt,
   };
 }
 
 export const supportApi = {
   list(): Promise<SupportTicket[]> {
-    return Promise.resolve(supportStorage.getTickets().map(toTicket));
+    return request<SupportTicket[]>('/support/tickets');
   },
 
-  getById(id: string): Promise<SupportTicket | null> {
-    const t = supportStorage.getTicketById(id);
-    return Promise.resolve(t ? toTicket(t) : null);
+  async getById(id: string): Promise<SupportTicket | null> {
+    try {
+      return await request<SupportTicket>(`/support/tickets/${encodeURIComponent(id)}`);
+    } catch {
+      return null;
+    }
   },
 
   create(form: SupportTicketFormData): Promise<SupportTicket> {
-    const ticket = supportStorage.createTicket({
-      type: form.type,
-      status: 'open',
-      subject: form.subject,
-      description: form.description,
-      orderId: form.orderId,
-      priority: 'normal',
-      customerName: form.customerName,
-      customerEmail: form.customerEmail,
-      customerPhone: form.customerPhone,
+    return request<SupportTicket>('/support/tickets', {
+      method: 'POST',
+      body: JSON.stringify(form),
     });
-    return Promise.resolve(toTicket(ticket));
   },
 
-  reply(id: string, message: string, sender: 'customer' | 'admin' = 'admin'): Promise<SupportMessage> {
-    const msg = supportStorage.addMessage({ ticketId: id, sender, message });
-    if (sender === 'admin') {
-      supportStorage.updateTicket(id, { adminReply: message, status: 'in_progress' });
-    }
-    return Promise.resolve(msg);
+  async reply(id: string, message: string, sender: 'customer' | 'admin' = 'admin'): Promise<SupportMessage> {
+    const apiMessage = await request<ApiMessage>(`/support/tickets/${encodeURIComponent(id)}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({
+        message,
+        author: sender === 'admin' ? 'agent' : 'customer',
+        authorName: sender === 'admin' ? 'CLOTH 客服' : 'Customer',
+      }),
+    });
+    return normalizeMessage(apiMessage);
   },
 
-  resolve(id: string): Promise<SupportTicket | null> {
-    const t = supportStorage.updateTicket(id, { status: 'resolved' });
-    return Promise.resolve(t ? toTicket(t) : null);
+  async resolve(id: string): Promise<SupportTicket | null> {
+    return request<SupportTicket>(`/support/tickets/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status: 'resolved' }),
+    });
   },
 
-  getMessages(ticketId: string): Promise<SupportMessage[]> {
-    return Promise.resolve(supportStorage.getMessages(ticketId));
+  async getMessages(ticketId: string): Promise<SupportMessage[]> {
+    const messages = await request<ApiMessage[]>(`/support/tickets/${encodeURIComponent(ticketId)}/messages`);
+    return messages.map(normalizeMessage);
+  },
+
+  getFaqs(category?: string): Promise<SupportFAQ[]> {
+    const query = category ? `?category=${encodeURIComponent(category)}` : '';
+    return request<SupportFAQ[]>(`/support/faqs${query}`);
   },
 
   seedDemo(): void {
-    supportStorage.seedDemoTickets();
+    // Demo seed now lives in the API SQLite collection.
   },
 };

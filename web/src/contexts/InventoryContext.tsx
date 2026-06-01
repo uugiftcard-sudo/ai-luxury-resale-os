@@ -53,7 +53,6 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    inventoryApi.seedDemo();
     refreshAll();
   }, [refreshAll]);
 

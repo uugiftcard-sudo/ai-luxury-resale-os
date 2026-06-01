@@ -1,53 +1,74 @@
 /**
- * Inventory API — routes requests through mockStorage.
- * Swap to real Supabase endpoints once configured.
+ * Inventory API — backed by the Express `/api/inventory` routes.
  */
-import { inventoryStorage, StoredInventoryItem, StoredInventoryTransaction } from '../lib/mockStorage';
 import type { InventoryItem, InventoryTransaction, InventoryFormData, InventoryStats } from '../types/warehouse';
 
-function toItem(s: StoredInventoryItem): InventoryItem {
-  return {
-    id: s.id, sku: s.sku, productId: s.productId, productName: s.productName,
-    brand: s.brand, category: s.category, size: s.size, color: s.color,
-    condition: s.condition, currentStock: s.currentStock, minStockThreshold: s.minStockThreshold,
-    unitCost: s.unitCost, unitPrice: s.unitPrice, location: s.location,
-    supplier: s.supplier, notes: s.notes, createdAt: s.createdAt, updatedAt: s.updatedAt,
-  };
+type ApiEnvelope<T> = {
+  success?: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+};
+
+type InventoryItemWithStatus = InventoryItem & { status?: 'in_stock' | 'low_stock' | 'out_of_stock' };
+
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const res = await fetch(`/api${path}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+    ...options,
+  });
+  const body = (await res.json()) as ApiEnvelope<T>;
+  if (!res.ok || body.success === false) {
+    throw new Error(body.error || body.message || `Inventory request failed (${res.status})`);
+  }
+  return body.data as T;
 }
 
-function toTx(s: StoredInventoryTransaction): InventoryTransaction {
-  return {
-    id: s.id, inventoryId: s.inventoryId, sku: s.sku, productName: s.productName,
-    type: s.type, quantity: s.quantity, referenceNo: s.referenceNo,
-    notes: s.notes, operator: s.operator, createdAt: s.createdAt,
-  };
+function normalizeItem(item: InventoryItemWithStatus): InventoryItem {
+  const { status, ...normalized } = item;
+  void status;
+  return normalized;
 }
 
 export const inventoryApi = {
-  list(): Promise<InventoryItem[]> {
-    return Promise.resolve(inventoryStorage.getItems().map(toItem));
+  async list(): Promise<InventoryItem[]> {
+    const items = await request<InventoryItemWithStatus[]>('/inventory');
+    return items.map(normalizeItem);
   },
 
-  getById(id: string): Promise<InventoryItem | null> {
-    const item = inventoryStorage.getItemById(id);
-    return Promise.resolve(item ? toItem(item) : null);
+  async getById(id: string): Promise<InventoryItem | null> {
+    try {
+      const item = await request<InventoryItemWithStatus>(`/inventory/${encodeURIComponent(id)}`);
+      return normalizeItem(item);
+    } catch {
+      return null;
+    }
   },
 
-  create(form: InventoryFormData): Promise<InventoryItem> {
-    const item = inventoryStorage.createItem(form);
-    return Promise.resolve(toItem(item));
+  async create(form: InventoryFormData): Promise<InventoryItem> {
+    const item = await request<InventoryItemWithStatus>('/inventory', {
+      method: 'POST',
+      body: JSON.stringify(form),
+    });
+    return normalizeItem(item);
   },
 
-  update(id: string, updates: Partial<InventoryItem>): Promise<InventoryItem | null> {
-    const item = inventoryStorage.updateItem(id, updates);
-    return Promise.resolve(item ? toItem(item) : null);
+  async update(id: string, updates: Partial<InventoryItem>): Promise<InventoryItem | null> {
+    const item = await request<InventoryItemWithStatus>(`/inventory/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+    return normalizeItem(item);
   },
 
   getTransactions(): Promise<InventoryTransaction[]> {
-    return Promise.resolve(inventoryStorage.getTransactions().map(toTx));
+    return request<InventoryTransaction[]>('/inventory/transactions');
   },
 
-  inbound(data: {
+  async inbound(data: {
     inventoryId?: string;
     sku?: string;
     productName: string;
@@ -57,73 +78,63 @@ export const inventoryApi = {
     unitCost?: number;
     operator?: string;
   }): Promise<{ item: InventoryItem; transaction: InventoryTransaction }> {
-    let item: StoredInventoryItem | null = null;
-
     if (data.inventoryId) {
-      item = inventoryStorage.adjustStock(data.inventoryId, data.quantity);
+      const result = await request<{ item: InventoryItemWithStatus; transaction: InventoryTransaction }>(
+        `/inventory/${encodeURIComponent(data.inventoryId)}/inbound`,
+        {
+          method: 'POST',
+          body: JSON.stringify(data),
+        },
+      );
+      return { item: normalizeItem(result.item), transaction: result.transaction };
     }
 
-    if (!item) {
-      const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-      item = inventoryStorage.createItem({
-        id,
-        sku: data.sku ?? `AUTO-${id}`,
-        productName: data.productName,
-        currentStock: data.quantity,
-        minStockThreshold: 3,
-        unitCost: data.unitCost,
-      });
-    }
-
-    const tx = inventoryStorage.addTransaction({
-      inventoryId: item.id,
-      sku: item.sku,
-      productName: item.productName,
-      type: 'inbound',
-      quantity: data.quantity,
-      referenceNo: data.referenceNo,
-      notes: data.notes,
-      operator: data.operator,
+    const created = await this.create({
+      sku: data.sku ?? `AUTO-${Date.now()}`,
+      productName: data.productName,
+      currentStock: data.quantity,
+      minStockThreshold: 3,
+      unitCost: data.unitCost,
     });
-
-    return Promise.resolve({ item: toItem(item), transaction: toTx(tx) });
+    return {
+      item: created,
+      transaction: {
+        id: `pending-${created.id}`,
+        inventoryId: created.id,
+        sku: created.sku,
+        productName: created.productName,
+        type: 'inbound',
+        quantity: data.quantity,
+        referenceNo: data.referenceNo,
+        notes: data.notes,
+        operator: data.operator,
+        createdAt: created.createdAt,
+      },
+    };
   },
 
-  outbound(data: {
+  async outbound(data: {
     inventoryId: string;
     quantity: number;
     referenceNo?: string;
     notes?: string;
     operator?: string;
   }): Promise<{ item: InventoryItem; transaction: InventoryTransaction }> {
-    const item = inventoryStorage.adjustStock(data.inventoryId, -data.quantity);
-    if (!item) return Promise.reject(new Error('Item not found'));
-
-    const tx = inventoryStorage.addTransaction({
-      inventoryId: item.id,
-      sku: item.sku,
-      productName: item.productName,
-      type: 'outbound',
-      quantity: -data.quantity,
-      referenceNo: data.referenceNo,
-      notes: data.notes,
-      operator: data.operator,
-    });
-
-    return Promise.resolve({ item: toItem(item), transaction: toTx(tx) });
+    const result = await request<{ item: InventoryItemWithStatus; transaction: InventoryTransaction }>(
+      `/inventory/${encodeURIComponent(data.inventoryId)}/outbound`,
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      },
+    );
+    return { item: normalizeItem(result.item), transaction: result.transaction };
   },
 
   getStats(): Promise<InventoryStats> {
-    const items = inventoryStorage.getItems();
-    const totalSKUs = items.length;
-    const totalStock = items.reduce<number>((sum, i) => sum + i.currentStock, 0);
-    const lowStockCount = items.filter((i: StoredInventoryItem) => i.currentStock > 0 && i.currentStock <= i.minStockThreshold).length;
-    const outOfStockCount = items.filter((i: StoredInventoryItem) => i.currentStock === 0).length;
-    const totalValue = items.reduce<number>((sum, i) => sum + (i.currentStock * (i.unitCost ?? 0)), 0);
-    return Promise.resolve({ totalSKUs, totalStock, lowStockCount, outOfStockCount, totalValue });
+    return request<InventoryStats>('/inventory/stats');
   },
 
   seedDemo(): void {
-    inventoryStorage.seedDemoInventory();
+    // Demo seed now lives in the API SQLite collection.
   },
 };

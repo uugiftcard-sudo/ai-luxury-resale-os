@@ -160,7 +160,7 @@ function FAQAccordion({ faqs }: { faqs: typeof FAQ_LIST }) {
 export default function Support() {
   const { market } = useMarket();
   const t = COPY[market] ?? COPY.CN;
-  const { tickets, loading, createTicket } = useSupport();
+  const { tickets, loading, error, createTicket } = useSupport();
   const [activeTab, setActiveTab] = useState<'list' | 'new' | 'faq'>('list');
   const [orderSearch, setOrderSearch] = useState('');
   const [orderResult, setOrderResult] = useState<string | null>(null);
@@ -260,6 +260,11 @@ export default function Support() {
                 {/* Ticket list */}
                 {loading ? (
                   <div className={styles.loading}>加载中...</div>
+                ) : error ? (
+                  <div className={styles.empty}>
+                    <p>{error}</p>
+                    <button className={styles.btnOutline} onClick={() => void window.location.reload()}>刷新重试</button>
+                  </div>
                 ) : tickets.length === 0 ? (
                   <div className={styles.empty}>
                     <p>暂无客服记录</p>
@@ -287,8 +292,8 @@ export default function Support() {
                   <h3 className={styles.sectionTitle}>{t.ticketForm.title}</h3>
 
                   <div className={styles.formGroup}>
-                    <label className={styles.label}>{t.ticketForm.typeLabel}</label>
-                    <select className={styles.select} value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value as SupportTicketType }))}>
+                    <label className={styles.label} htmlFor="support-ticket-type">{t.ticketForm.typeLabel}</label>
+                    <select id="support-ticket-type" className={styles.select} value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value as SupportTicketType }))}>
                       {TICKET_TYPES.map(type => (
                         <option key={type} value={type}>{t.typeMap[type]}</option>
                       ))}
@@ -296,44 +301,44 @@ export default function Support() {
                   </div>
 
                   <div className={styles.formGroup}>
-                    <label className={styles.label}>{t.ticketForm.subjectLabel} *</label>
-                    <input type="text" className={`${styles.input} ${formErrors.subject ? styles.inputError : ''}`}
+                    <label className={styles.label} htmlFor="support-ticket-subject">{t.ticketForm.subjectLabel} *</label>
+                    <input id="support-ticket-subject" type="text" className={`${styles.input} ${formErrors.subject ? styles.inputError : ''}`}
                       value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} placeholder="请简述您的问题" />
                     {formErrors.subject && <span className={styles.error}>{formErrors.subject}</span>}
                   </div>
 
                   <div className={styles.formGroup}>
-                    <label className={styles.label}>{t.ticketForm.descLabel} *</label>
-                    <textarea className={`${styles.textarea} ${formErrors.description ? styles.inputError : ''}`}
+                    <label className={styles.label} htmlFor="support-ticket-description">{t.ticketForm.descLabel} *</label>
+                    <textarea id="support-ticket-description" className={`${styles.textarea} ${formErrors.description ? styles.inputError : ''}`}
                       value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                       placeholder="请详细描述您的问题" rows={4} />
                     {formErrors.description && <span className={styles.error}>{formErrors.description}</span>}
                   </div>
 
                   <div className={styles.formGroup}>
-                    <label className={styles.label}>{t.ticketForm.orderIdLabel}</label>
-                    <input type="text" className={styles.input} value={form.orderId}
+                    <label className={styles.label} htmlFor="support-ticket-order">{t.ticketForm.orderIdLabel}</label>
+                    <input id="support-ticket-order" type="text" className={styles.input} value={form.orderId}
                       onChange={e => setForm(f => ({ ...f, orderId: e.target.value }))} placeholder="CS20260520001" />
                   </div>
 
                   <div className={styles.formRow}>
                     <div className={styles.formGroup}>
-                      <label className={styles.label}>{t.ticketForm.nameLabel} *</label>
-                      <input type="text" className={`${styles.input} ${formErrors.customerName ? styles.inputError : ''}`}
+                      <label className={styles.label} htmlFor="support-ticket-name">{t.ticketForm.nameLabel} *</label>
+                      <input id="support-ticket-name" type="text" className={`${styles.input} ${formErrors.customerName ? styles.inputError : ''}`}
                         value={form.customerName} onChange={e => setForm(f => ({ ...f, customerName: e.target.value }))} />
                       {formErrors.customerName && <span className={styles.error}>{formErrors.customerName}</span>}
                     </div>
                     <div className={styles.formGroup}>
-                      <label className={styles.label}>{t.ticketForm.emailLabel} *</label>
-                      <input type="email" className={`${styles.input} ${formErrors.customerEmail ? styles.inputError : ''}`}
+                      <label className={styles.label} htmlFor="support-ticket-email">{t.ticketForm.emailLabel} *</label>
+                      <input id="support-ticket-email" type="email" className={`${styles.input} ${formErrors.customerEmail ? styles.inputError : ''}`}
                         value={form.customerEmail} onChange={e => setForm(f => ({ ...f, customerEmail: e.target.value }))} />
                       {formErrors.customerEmail && <span className={styles.error}>{formErrors.customerEmail}</span>}
                     </div>
                   </div>
 
                   <div className={styles.formGroup}>
-                    <label className={styles.label}>{t.ticketForm.phoneLabel}</label>
-                    <input type="tel" className={styles.input} value={form.customerPhone}
+                    <label className={styles.label} htmlFor="support-ticket-phone">{t.ticketForm.phoneLabel}</label>
+                    <input id="support-ticket-phone" type="tel" className={styles.input} value={form.customerPhone}
                       onChange={e => setForm(f => ({ ...f, customerPhone: e.target.value }))} />
                   </div>
 
