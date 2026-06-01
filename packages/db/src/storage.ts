@@ -105,7 +105,6 @@ export interface Store {
   leads: Collection<SourcingLead>;
   customers: Collection<CustomerProfile>;
   liveSessions: Collection<LiveSession>;
-  sourcingLeads: Collection<SourcingLead>;
   listings: Collection<Record<string, unknown>>;
   videoAssets: Collection<Record<string, unknown>>;
   crmTasks: Collection<Record<string, unknown>>;
@@ -117,7 +116,6 @@ let _orders: Collection<OrderRecord>;
 let _leads: Collection<SourcingLead>;
 let _customers: Collection<CustomerProfile>;
 let _liveSessions: Collection<LiveSession>;
-let _sourcingLeads: Collection<SourcingLead>;
 let _listings: Collection<Record<string, unknown>>;
 let _videoAssets: Collection<Record<string, unknown>>;
 let _crmTasks: Collection<Record<string, unknown>>;
@@ -128,10 +126,12 @@ function initStore(): void {
   _products = new Collection<Product>("products.json", "sku", (p) => p.sku);
   _proofPacks = new Collection<ProofPack>("proof-packs.json", "id", (p) => p.id);
   _orders = new Collection<OrderRecord>("orders.json", "orderId", (o) => o.orderId);
-  _leads = new Collection<SourcingLead>("leads.json", "id", (l) => l.id);
+
+  // Leads are used by the sourcing pipeline. Keep a single canonical file to avoid divergence.
+  _leads = new Collection<SourcingLead>("sourcing-leads.json", "id", (l) => l.id);
+
   _customers = new Collection<CustomerProfile>("customers.json", "customerId", (c) => c.customerId);
   _liveSessions = new Collection<LiveSession>("live-sessions.json", "sessionId", (s) => s.sessionId);
-  _sourcingLeads = new Collection<SourcingLead>("sourcing-leads.json", "id", (l) => l.id);
   _listings = new Collection<Record<string, unknown>>("listings.json", "id", (l) => String(l["id"] ?? ""));
   _videoAssets = new Collection<Record<string, unknown>>("video-assets.json", "videoId", (v) => String(v["videoId"] ?? ""));
   _crmTasks = new Collection<Record<string, unknown>>("crm-tasks.json", "taskId", (t) => String(t["taskId"] ?? ""));
@@ -147,7 +147,6 @@ function getStore() {
     leads: _leads,
     customers: _customers,
     liveSessions: _liveSessions,
-    sourcingLeads: _sourcingLeads,
     listings: _listings as Collection<Record<string, unknown>>,
     videoAssets: _videoAssets as Collection<Record<string, unknown>>,
     crmTasks: _crmTasks as Collection<Record<string, unknown>>,
@@ -204,7 +203,6 @@ export const leads = {
   count: (): number => getStore().leads.count(),
 };
 
-export const customers = {
   findAll: (): CustomerProfile[] => getStore().customers.findAll(),
   find: (
     predicate: (c: CustomerProfile) => boolean
