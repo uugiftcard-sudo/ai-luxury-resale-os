@@ -11,7 +11,7 @@ import {
 } from "./index.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = join(__dirname, "../../data");
+const DATA_DIR = join(__dirname, "../data");
 
 // ---------------------------------------------------------------------------
 // Helpers
