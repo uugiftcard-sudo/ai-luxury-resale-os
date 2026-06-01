@@ -408,7 +408,7 @@ export {
   products,
   proofPacks,
   orders,
-  sourcingLeads as leads,
+  leads,
   customers,
   liveSessions,
   listings,

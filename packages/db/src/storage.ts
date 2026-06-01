@@ -203,6 +203,7 @@ export const leads = {
   count: (): number => getStore().leads.count(),
 };
 
+export const customers = {
   findAll: (): CustomerProfile[] => getStore().customers.findAll(),
   find: (
     predicate: (c: CustomerProfile) => boolean
@@ -224,18 +225,6 @@ export const liveSessions = {
   remove: (predicate: (s: LiveSession) => boolean): number =>
     getStore().liveSessions.remove(predicate),
   count: (): number => getStore().liveSessions.count(),
-};
-
-export const sourcingLeads = {
-  findAll: (): SourcingLead[] => getStore().sourcingLeads.findAll(),
-  find: (
-    predicate: (l: SourcingLead) => boolean
-  ): SourcingLead | undefined => getStore().sourcingLeads.find(predicate),
-  upsert: (lead: SourcingLead): SourcingLead =>
-    getStore().sourcingLeads.upsert(lead),
-  remove: (predicate: (l: SourcingLead) => boolean): number =>
-    getStore().sourcingLeads.remove(predicate),
-  count: (): number => getStore().sourcingLeads.count(),
 };
 
 export const listings = {
@@ -277,7 +266,6 @@ export function clearAll(): void {
   store.leads.remove(() => true);
   store.customers.remove(() => true);
   store.liveSessions.remove(() => true);
-  store.sourcingLeads.remove(() => true);
   store.listings.remove(() => true);
   store.videoAssets.remove(() => true);
   store.crmTasks.remove(() => true);
