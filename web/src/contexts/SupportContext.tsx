@@ -42,7 +42,6 @@ export function SupportProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    supportApi.seedDemo();
     refreshTickets();
   }, [refreshTickets]);
 
