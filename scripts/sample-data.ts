@@ -224,9 +224,14 @@ const sampleCustomers: CustomerProfile[] = [
 ];
 
 export function seedToDb(): void {
-  seedAll(sampleProducts, sampleProofPacks, sampleSourcingLeads, sampleOrders);
-  sampleCustomers.forEach((c) => customers.upsert(c));
-  sampleLiveSessions.forEach((s) => liveSessions.upsert(s));
+  seedAll(
+    sampleProducts,
+    sampleProofPacks,
+    sampleSourcingLeads,
+    sampleOrders,
+    sampleCustomers,
+    sampleLiveSessions
+  );
   console.log(
     "Seeded: products=%d, proofPacks=%d, leads=%d, orders=%d, customers=%d, liveSessions=%d",
     sampleProducts.length,

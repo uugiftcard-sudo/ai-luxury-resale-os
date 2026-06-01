@@ -279,12 +279,16 @@ export function seedAll(
   productsData: Product[],
   proofsData: ProofPack[],
   leadsData: SourcingLead[],
-  ordersData: OrderRecord[]
+  ordersData: OrderRecord[],
+  customersData: CustomerProfile[] = [],
+  liveSessionsData: LiveSession[] = []
 ): void {
   productsData.forEach((p) => getStore().products.upsert(p));
   proofsData.forEach((p) => getStore().proofPacks.upsert(p));
   leadsData.forEach((l) => getStore().leads.upsert(l));
   ordersData.forEach((o) => getStore().orders.upsert(o));
+  customersData.forEach((c) => getStore().customers.upsert(c));
+  liveSessionsData.forEach((s) => getStore().liveSessions.upsert(s));
 }
 
 // ---------------------------------------------------------------------------

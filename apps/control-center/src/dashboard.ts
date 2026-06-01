@@ -4,18 +4,10 @@ import {
   products, proofPacks, orders, leads, customers, liveSessions,
   seedAll, type Product, type SourcingLead, type LiveSession
 } from "@luxury/db";
-import { auditProofPack, calculateProofScore } from "@luxury/product-proof";
-import { generateListings } from "@luxury/listing-crosspost";
-import { generateContentPack } from "@luxury/content-live";
-import { generateProductVideoPack, dailyVideoCalendar } from "@luxury/video-factory";
-import { scoreSourcingLead } from "@luxury/sourcing-engine";
-import { respondToCustomer } from "@luxury/customer-support-crm";
-import { buildFulfilmentPlan } from "@luxury/order-fulfillment";
-import { buildLiveRunOfShow } from "@luxury/live-ops";
-import { buildControlCenterSnapshot } from "./index.js";
+// ...
 import {
   sampleProducts, sampleProofPacks, sampleSourcingLeads,
-  sampleOrders, sampleLiveSessions
+  sampleOrders, sampleLiveSessions, sampleCustomers
 } from "../../../scripts/sample-data.js";
 
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
@@ -57,9 +49,8 @@ function ask(question: string): Promise<string> {
 
 function ensureSeeded(): void {
   if (products.count() === 0) {
-    seedAll(sampleProducts, sampleProofPacks, sampleSourcingLeads, sampleOrders);
-    customers.findAll().forEach(() => {}); // touch collection
-    console.log(label(GREEN, `✓ Seeded ${sampleProducts.length} products, ${sampleProofPacks.length} proofs, ${sampleSourcingLeads.length} leads, ${sampleOrders.length} orders`));
+    seedAll(sampleProducts, sampleProofPacks, sampleSourcingLeads, sampleOrders, sampleCustomers, sampleLiveSessions);
+    console.log(label(GREEN, `✓ Seeded ${sampleProducts.length} products, ${sampleProofPacks.length} proofs, ${sampleSourcingLeads.length} leads, ${sampleOrders.length} orders, ${sampleCustomers.length} customers, ${sampleLiveSessions.length} live sessions`));
   }
 }
 
@@ -426,7 +417,7 @@ async function mainLoop() {
     else if (cmd === "a") { await cmdDailySchedule(market); await ask(dim("\n  Press Enter to continue...")); }
     else if (cmd === "p") { await cmdAddProduct(market); await ask(dim("\n  Press Enter to continue...")); }
     else if (cmd === "r") {
-      seedAll(sampleProducts, sampleProofPacks, sampleSourcingLeads, sampleOrders);
+      seedAll(sampleProducts, sampleProofPacks, sampleSourcingLeads, sampleOrders, sampleCustomers, sampleLiveSessions);
       console.log(ok("\n  ✓ Data re-seeded."));
       await ask(dim("  Press Enter to continue..."));
     }

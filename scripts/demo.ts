@@ -7,10 +7,19 @@ import {
   sampleProofPacks,
   sampleSourcingLeads,
   sampleOrders,
+  sampleCustomers,
+  sampleLiveSessions,
 } from "./sample-data.js";
 
 // Seed on first run so storage has data
-seedAll(sampleProducts, sampleProofPacks, sampleSourcingLeads, sampleOrders);
+seedAll(
+  sampleProducts,
+  sampleProofPacks,
+  sampleSourcingLeads,
+  sampleOrders,
+  sampleCustomers,
+  sampleLiveSessions
+);
 
 console.log("\n=== CLOTH Control Center — UK ===");
 const ukSnapshot = buildControlCenterSnapshot("UK", products.findAll(), proofPacks.findAll());
