@@ -19,3 +19,4 @@ __pycache__/
 *.pyc
 packages/data/
 packages/data/
+packages/db/data/
