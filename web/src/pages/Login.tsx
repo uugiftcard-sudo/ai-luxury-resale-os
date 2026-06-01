@@ -1,87 +1,84 @@
+/**
+ * Login page — stub UI with AuthContext integration
+ */
 import { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useToast } from '../hooks/useToast';
 import { useMarket } from '../hooks/useMarket';
-import styles from './Login.module.css';
-
-function marketPath(market: string, path: string): string {
-  const prefix = market === 'UK' ? '' : `/${market.toLowerCase()}`;
-  if (path === '/') return prefix || '/';
-  return `${prefix}${path}`;
-}
+import { useToast } from '../hooks/useToast';
 
 export default function Login() {
   const { login } = useAuth();
-  const { showToast } = useToast();
   const { market } = useMarket();
-  const nav = useNavigate();
-  const location = useLocation();
-
+  const { showToast } = useToast();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  async function onSubmit(e: React.FormEvent) {
+  const prefix = market === 'UK' ? '' : `/${market.toLowerCase()}`;
+  const isEn = market === 'UK';
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!email.trim() || !password) {
-      showToast('请填写邮箱和密码', 'error');
-      return;
-    }
-
-    setSubmitting(true);
+    setLoading(true);
     try {
-      await login(email.trim(), password);
-      showToast('登录成功', 'success');
-      const redirect = (location.state as { from?: string } | null)?.from;
-      nav(redirect || marketPath(market, '/'));
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : '登录失败', 'error');
+      await login(email, password);
+      showToast(isEn ? 'Welcome back!' : '歡迎回來！', 'success');
+      navigate(prefix || '/');
+    } catch {
+      showToast(isEn ? 'Login failed. Please try again.' : '登入失敗，請重試', 'error');
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
   }
 
   return (
-    <div className={styles.page}>
-      <div className={styles.card}>
-        <h1 className={styles.title}>登录</h1>
-        <p className={styles.subtitle}>使用你的邮箱登录 CLOTH</p>
-
-        <form onSubmit={onSubmit} className={styles.form}>
-          <label className={styles.label}>
-            邮箱
+    <div className="page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '70vh' }}>
+      <div style={{ width: '100%', maxWidth: 420, padding: '2rem', background: 'var(--color-surface)', borderRadius: 12, boxShadow: 'var(--shadow-md)' }}>
+        <h1 style={{ marginBottom: '0.5rem', fontSize: '1.5rem' }}>{isEn ? 'Sign In' : '登入'}</h1>
+        <p style={{ color: 'var(--color-text-muted)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+          {isEn ? "Don't have an account? " : '還沒有帳號？'}
+          <Link to={`${prefix}/register`} style={{ color: 'var(--color-accent)' }}>
+            {isEn ? 'Register' : '立即註冊'}
+          </Link>
+        </p>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div>
+            <label style={{ fontSize: '0.85rem', fontWeight: 500, display: 'block', marginBottom: 4 }}>
+              {isEn ? 'Email' : '電郵地址'}
+            </label>
             <input
-              className={styles.input}
               type="email"
-              autoComplete="email"
+              required
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="name@example.com"
+              onChange={e => setEmail(e.target.value)}
+              placeholder={isEn ? 'you@example.com' : '請輸入電郵地址'}
+              style={{ width: '100%', padding: '0.65rem 0.9rem', border: '1px solid var(--color-border)', borderRadius: 8, fontSize: '0.95rem', boxSizing: 'border-box' }}
             />
-          </label>
-
-          <label className={styles.label}>
-            密码
+          </div>
+          <div>
+            <label style={{ fontSize: '0.85rem', fontWeight: 500, display: 'block', marginBottom: 4 }}>
+              {isEn ? 'Password' : '密碼'}
+            </label>
             <input
-              className={styles.input}
               type="password"
-              autoComplete="current-password"
+              required
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="至少 8 位"
+              onChange={e => setPassword(e.target.value)}
+              placeholder={isEn ? 'Enter password' : '請輸入密碼'}
+              style={{ width: '100%', padding: '0.65rem 0.9rem', border: '1px solid var(--color-border)', borderRadius: 8, fontSize: '0.95rem', boxSizing: 'border-box' }}
             />
-          </label>
-
-          <button className={styles.primary} type="submit" disabled={submitting}>
-            {submitting ? '提交中…' : '登录'}
+          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="btn btn-primary"
+            style={{ marginTop: '0.5rem' }}
+          >
+            {loading ? (isEn ? 'Signing in…' : '登入中…') : (isEn ? 'Sign In' : '登入')}
           </button>
         </form>
-
-        <div className={styles.footer}>
-          <span>没有账号？</span>
-          <Link to={marketPath(market, '/register')} className={styles.link}>去注册</Link>
-        </div>
       </div>
     </div>
   );
