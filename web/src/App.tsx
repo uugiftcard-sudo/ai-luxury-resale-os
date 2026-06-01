@@ -121,12 +121,12 @@ export default function App() {
                   </Suspense>
                 </main>
                 <Footer />
-                </AuthProvider>
-              </InventoryProvider>
-            </SupportProvider>
-          </MarketProvider>
-        </CartProvider>
-      </ToastProvider>
-    </BrowserRouter>
-  );
+              </AuthProvider>
+            </InventoryProvider>
+          </SupportProvider>
+        </MarketProvider>
+      </CartProvider>
+    </ToastProvider>
+  </BrowserRouter>
+);
 }
