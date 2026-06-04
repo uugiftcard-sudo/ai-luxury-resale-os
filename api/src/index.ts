@@ -12,6 +12,7 @@ import financeRouter from './routes/finance';
 import inventoryRouter from './routes/inventory';
 import supportRouter from './routes/support';
 import liveRouter from './routes/live';
+import authRouter from './routes/auth';
 import { errorHandler } from './middleware/response';
 
 const app = express();
@@ -41,6 +42,7 @@ app.use('/api/finance', financeRouter);
 app.use('/api/inventory', inventoryRouter);
 app.use('/api/support', supportRouter);
 app.use('/api/live', liveRouter);
+app.use('/api/auth', authRouter);
 
 // 健康检查
 app.get('/api/health', (_req, res) => {
