@@ -1,13 +1,33 @@
 import * as readline from "readline";
 import { agentsForMarket } from "@luxury/agents";
 import {
-  products, proofPacks, orders, leads, customers, liveSessions,
-  seedAll, type Product, type SourcingLead, type LiveSession
+  products,
+  proofPacks,
+  orders,
+  leads,
+  customers,
+  liveSessions,
+  seedAll,
+  type Product,
+  type SourcingLead,
+  type LiveSession,
 } from "@luxury/db";
-// ...
+import { auditProofPack, calculateProofScore } from "@luxury/product-proof";
+import { generateListings } from "@luxury/listing-crosspost";
+import { generateContentPack } from "@luxury/content-live";
+import { generateProductVideoPack, dailyVideoCalendar } from "@luxury/video-factory";
+import { scoreSourcingLead } from "@luxury/sourcing-engine";
+import { respondToCustomer } from "@luxury/customer-support-crm";
+import { buildFulfilmentPlan } from "@luxury/order-fulfillment";
+import { buildLiveRunOfShow } from "@luxury/live-ops";
+import { buildControlCenterSnapshot } from "./index.js";
 import {
-  sampleProducts, sampleProofPacks, sampleSourcingLeads,
-  sampleOrders, sampleLiveSessions, sampleCustomers
+  sampleProducts,
+  sampleProofPacks,
+  sampleSourcingLeads,
+  sampleOrders,
+  sampleLiveSessions,
+  sampleCustomers,
 } from "../../../scripts/sample-data.js";
 
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });

@@ -16,7 +16,7 @@
     "check": "npm run build",
     "test": "node --test --test-concurrency=1 scripts/*.test.mjs",
     "start": "npm run start --workspace=api",
-    "test:scenarios": "node --test scripts/api-validation-errors.test.mjs scripts/product-market-persistence.test.mjs scripts/mobile-nav-contract.test.mjs scripts/api-smoke.test.mjs && node --import tsx --test api/src/db/sqlite-store.test.ts",
+    "test:scenarios": "node --test --test-concurrency=1 scripts/api-validation-errors.test.mjs scripts/product-market-persistence.test.mjs scripts/mobile-nav-contract.test.mjs scripts/api-smoke.test.mjs && node --import tsx --test api/src/db/sqlite-store.test.ts",
     "agent:run": "node_modules/.bin/tsx scripts/run-cycle.ts"
   },
   "devDependencies": {
