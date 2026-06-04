@@ -463,6 +463,22 @@
     margin-top: 8px;
   }
 
+  .navTextButton {
+    appearance: none;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    padding: 12px 0;
+    color: var(--color-text-secondary);
+    font-size: 0.95rem;
+    cursor: pointer;
+  }
+
+  .navTextButton:hover {
+    color: var(--color-text-primary);
+  }
+
   .searchForm { display: none; }
   .menuBtn    { display: flex; }
 
