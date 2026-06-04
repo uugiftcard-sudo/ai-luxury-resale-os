@@ -11,6 +11,16 @@ export type ProductCondition =
   | '轻微使用痕迹'
   | '有明显使用痕迹';
 
+export type MarketSyncStatus = 'active' | 'synced' | 'pending' | 'error';
+
+export interface MarketSyncEntry {
+  market: string;
+  status: MarketSyncStatus;
+  lastSynced?: string;
+  stock?: number;
+  syncedPrice?: number;
+}
+
 export interface Product {
   id: string;
   title: string;
@@ -26,6 +36,8 @@ export interface Product {
   status: ProductStatus;
   createdAt: string;
   updatedAt?: string;
+  market?: string;
+  marketSync?: MarketSyncEntry[];
 }
 
 // ==================== 订单相关 ====================

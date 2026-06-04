@@ -16,6 +16,9 @@ export type ProductCondition =
 // 市场范围
 export type MarketScope = 'UK' | 'HK' | 'CN' | 'ALL';
 
+// 市场同步状态
+export type MarketSyncStatus = 'active' | 'synced' | 'pending' | 'error';
+
 // 商品接口
 export interface Product {
   id: string;
@@ -33,6 +36,16 @@ export interface Product {
   createdAt: string;
   updatedAt?: string;
   market?: MarketScope;     // 所属市场：UK/HK/CN/ALL，未定义时默认ALL
+  marketSync?: MarketSyncEntry[]; // 多市场同步状态
+}
+
+// 市场同步条目
+export interface MarketSyncEntry {
+  market: MarketScope;
+  status: MarketSyncStatus;
+  lastSynced?: string;
+  stock?: number;
+  syncedPrice?: number;
 }
 
 // 订单状态

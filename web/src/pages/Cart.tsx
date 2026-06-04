@@ -8,6 +8,7 @@ import { useCart } from '../hooks/useCart';
 import { useToast } from '../hooks/useToast';
 import { useMarket } from '../hooks/useMarket';
 import { orderApi, displayPrice } from '../api/client';
+import StripeCheckout from '../components/StripeCheckout';
 import styles from './Cart.module.css';
 
 const COPY: Record<string, Record<string, string>> = {
@@ -100,6 +101,8 @@ const PHONE_PATTERN: Record<string, RegExp> = {
   UK: /^\+?[\d\s\-()]{7,15}$/,
 };
 
+type CheckoutStep = 'info' | 'payment';
+
 export default function Cart() {
   const { items, removeItem, clearCart } = useCart();
   const { showToast } = useToast();
@@ -110,6 +113,7 @@ export default function Cart() {
   const [buyerPhone, setBuyerPhone] = useState('');
   const [buyerAddress, setBuyerAddress] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [step, setStep] = useState<CheckoutStep>('info');
 
   const t = COPY[market] ?? COPY.CN;
 
@@ -134,26 +138,8 @@ export default function Cart() {
       showToast(t.cartEmpty, 'error');
       return;
     }
-
-    setSubmitting(true);
-    try {
-      for (const item of items) {
-        await orderApi.create(
-          {
-            productId: item.product.id,
-            buyerInfo: { name: buyerName, phone: buyerPhone, address: buyerAddress },
-          },
-          market,
-        );
-      }
-      clearCart();
-      showToast(`${items.length} ${t.success}`, 'success');
-      navigate('/orders');
-    } catch {
-      showToast(t.checkoutFailed, 'error');
-    } finally {
-      setSubmitting(false);
-    }
+    // Move to payment step — StripeCheckout will create the PaymentIntent
+    setStep('payment');
   }
 
   if (items.length === 0) {
@@ -276,14 +262,49 @@ export default function Cart() {
                 <span>{totalLabel}</span>
               </div>
 
-              <button
-                className="btn btn-primary btn-lg"
-                style={{ width: '100%', marginTop: '16px' }}
-                onClick={handleCheckout}
-                disabled={submitting}
-              >
-                {submitting ? t.submitting : `${t.checkoutBtn} (${items.length})`}
-              </button>
+              {step === 'info' && (
+                <button
+                  className="btn btn-primary btn-lg"
+                  style={{ width: '100%', marginTop: '16px' }}
+                  onClick={handleCheckout}
+                  disabled={submitting}
+                >
+                  {submitting ? t.submitting : `${t.checkoutBtn} (${items.length})`}
+                </button>
+              )}
+
+              {step === 'payment' && (
+                <div style={{ marginTop: '16px' }}>
+        <StripeCheckout
+          key={items[0]?.product.id + '-' + convertedTotal}
+          productId={items[0]?.product.id}
+          amount={convertedTotal}
+          currency={market}
+                    onSuccess={async () => {
+                      setSubmitting(true);
+                      try {
+                        for (const item of items) {
+                          await orderApi.create(
+                            {
+                              productId: item.product.id,
+                              buyerInfo: { name: buyerName, phone: buyerPhone, address: buyerAddress },
+                            },
+                            market,
+                          );
+                        }
+                        clearCart();
+                        showToast(`${items.length} ${t.success}`, 'success');
+                        navigate('/orders');
+                      } catch {
+                        showToast(t.checkoutFailed, 'error');
+                      } finally {
+                        setSubmitting(false);
+                      }
+                    }}
+                    onCancel={() => setStep('info')}
+                  />
+                </div>
+              )}
 
               <p className={styles.note}>{t.note}</p>
             </div>
