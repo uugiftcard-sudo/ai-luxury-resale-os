@@ -74,7 +74,7 @@ export default function Header() {
   const { totalItems } = useCart();
   const { market, setMarket } = useMarket();
   const { count: wishlistCount } = useWishlist();
-  const { user, logout, isLoading } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
@@ -289,7 +289,7 @@ export default function Header() {
           </Link>
 
           {/* Auth */}
-          {!isLoading && !user && (
+          {!user && (
             <>
               <Link to={marketPath('/login')} onClick={closeMenu}>
                 {market === 'UK' ? 'Login' : '登录'}
@@ -299,7 +299,7 @@ export default function Header() {
               </Link>
             </>
           )}
-          {!isLoading && user && (
+          {user && (
             <>
               <span className={styles.navSectionLabel}>
                 {market === 'UK' ? `Hi, ${user.name}` : `你好，${user.name}`}
