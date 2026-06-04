@@ -1,100 +1,100 @@
+/**
+ * Register page — stub UI
+ */
 import { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useToast } from '../hooks/useToast';
 import { useMarket } from '../hooks/useMarket';
-import styles from './Register.module.css';
-
-function marketPath(market: string, path: string): string {
-  const prefix = market === 'UK' ? '' : `/${market.toLowerCase()}`;
-  if (path === '/') return prefix || '/';
-  return `${prefix}${path}`;
-}
+import { useToast } from '../hooks/useToast';
 
 export default function Register() {
-  const { register } = useAuth();
-  const { showToast } = useToast();
+  const { login } = useAuth();
   const { market } = useMarket();
-  const nav = useNavigate();
-  const location = useLocation();
-
+  const { showToast } = useToast();
+  const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  async function onSubmit(e: React.FormEvent) {
+  const prefix = market === 'UK' ? '' : `/${market.toLowerCase()}`;
+  const isEn = market === 'UK';
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!name.trim() || !email.trim() || !password) {
-      showToast('请填写姓名、邮箱和密码', 'error');
-      return;
-    }
-
-    setSubmitting(true);
+    setLoading(true);
     try {
-      await register(email.trim(), password, name.trim());
-      showToast('注册成功', 'success');
-      const redirect = (location.state as { from?: string } | null)?.from;
-      nav(redirect || marketPath(market, '/'));
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : '注册失败', 'error');
+      // Stub: just log in directly after "registration"
+      await login(email, password);
+      showToast(isEn ? `Welcome, ${name}!` : `歡迎，${name}！`, 'success');
+      navigate(prefix || '/');
+    } catch {
+      showToast(isEn ? 'Registration failed. Please try again.' : '註冊失敗，請重試', 'error');
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
   }
 
   return (
-    <div className={styles.page}>
-      <div className={styles.card}>
-        <h1 className={styles.title}>注册</h1>
-        <p className={styles.subtitle}>创建一个 CLOTH 账号</p>
-
-        <form onSubmit={onSubmit} className={styles.form}>
-          <label className={styles.label}>
-            姓名
+    <div className="page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '70vh' }}>
+      <div style={{ width: '100%', maxWidth: 420, padding: '2rem', background: 'var(--color-surface)', borderRadius: 12, boxShadow: 'var(--shadow-md)' }}>
+        <h1 style={{ marginBottom: '0.5rem', fontSize: '1.5rem' }}>{isEn ? 'Create Account' : '建立帳號'}</h1>
+        <p style={{ color: 'var(--color-text-muted)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+          {isEn ? 'Already have an account? ' : '已有帳號？'}
+          <Link to={`${prefix}/login`} style={{ color: 'var(--color-accent)' }}>
+            {isEn ? 'Sign in' : '立即登入'}
+          </Link>
+        </p>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div>
+            <label style={{ fontSize: '0.85rem', fontWeight: 500, display: 'block', marginBottom: 4 }}>
+              {isEn ? 'Name' : '姓名'}
+            </label>
             <input
-              className={styles.input}
               type="text"
+              required
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="你的称呼"
-              autoComplete="name"
+              onChange={e => setName(e.target.value)}
+              placeholder={isEn ? 'Your name' : '請輸入姓名'}
+              style={{ width: '100%', padding: '0.65rem 0.9rem', border: '1px solid var(--color-border)', borderRadius: 8, fontSize: '0.95rem', boxSizing: 'border-box' }}
             />
-          </label>
-
-          <label className={styles.label}>
-            邮箱
+          </div>
+          <div>
+            <label style={{ fontSize: '0.85rem', fontWeight: 500, display: 'block', marginBottom: 4 }}>
+              {isEn ? 'Email' : '電郵地址'}
+            </label>
             <input
-              className={styles.input}
               type="email"
-              autoComplete="email"
+              required
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="name@example.com"
+              onChange={e => setEmail(e.target.value)}
+              placeholder={isEn ? 'you@example.com' : '請輸入電郵地址'}
+              style={{ width: '100%', padding: '0.65rem 0.9rem', border: '1px solid var(--color-border)', borderRadius: 8, fontSize: '0.95rem', boxSizing: 'border-box' }}
             />
-          </label>
-
-          <label className={styles.label}>
-            密码
+          </div>
+          <div>
+            <label style={{ fontSize: '0.85rem', fontWeight: 500, display: 'block', marginBottom: 4 }}>
+              {isEn ? 'Password' : '密碼'}
+            </label>
             <input
-              className={styles.input}
               type="password"
-              autoComplete="new-password"
+              required
+              minLength={6}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="至少 8 位"
+              onChange={e => setPassword(e.target.value)}
+              placeholder={isEn ? 'Min. 6 characters' : '最少 6 個字元'}
+              style={{ width: '100%', padding: '0.65rem 0.9rem', border: '1px solid var(--color-border)', borderRadius: 8, fontSize: '0.95rem', boxSizing: 'border-box' }}
             />
-          </label>
-
-          <button className={styles.primary} type="submit" disabled={submitting}>
-            {submitting ? '提交中…' : '注册'}
+          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="btn btn-primary"
+            style={{ marginTop: '0.5rem' }}
+          >
+            {loading ? (isEn ? 'Creating…' : '建立中…') : (isEn ? 'Create Account' : '建立帳號')}
           </button>
         </form>
-
-        <div className={styles.footer}>
-          <span>已有账号？</span>
-          <Link to={marketPath(market, '/login')} className={styles.link}>去登录</Link>
-        </div>
       </div>
     </div>
   );
