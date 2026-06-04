@@ -2,10 +2,11 @@
  * Support — 客服中心页面
  * Routes: /support, /hk/support, /cn/support
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMarket } from '../hooks/useMarket';
 import { useSupport } from '../contexts/SupportContext';
-import type { SupportTicketType, SupportTicketStatus } from '../types/support';
+import { supportApi } from '../api/support';
+import type { SupportTicketType, SupportTicketStatus, SupportFAQ } from '../types/support';
 import styles from './Support.module.css';
 
 // ── Copy config per market ─────────────────────────────────────────────────────
@@ -34,7 +35,7 @@ const COPY: Record<string, {
 }> = {
   UK: {
     pageTitle: 'Customer Support',
-    pageSubtitle: 'We\'re here to help — check your orders, raise after-sales requests, or browse FAQs.',
+    pageSubtitle: "We're here to help — check your orders, raise after-sales requests, or browse FAQs.",
     tabs: { myTickets: 'My Tickets', newTicket: 'New Request', faq: 'FAQ' },
     orderSection: { title: 'Track Your Order', placeholder: 'Enter order number (e.g. CS20260520001)', btn: 'Search', noOrder: 'No order found.' },
     ticketForm: {
@@ -87,22 +88,13 @@ const COPY: Record<string, {
 
 const TICKET_TYPES: SupportTicketType[] = ['inquiry', 'return', 'exchange', 'repair'];
 
-const FAQ_LIST = [
-  { id: '1', q: 'CLOTH 如何保证商品是正品？', a: '我们所有商品均经过专业鉴定师鉴定，提供实物细节照片及鉴定报告。支持 7 天无理由退换（不影响二次销售）。', category: '正品保障' },
-  { id: '2', q: '下单后多久发货？', a: '一般情况下，订单确认后 1-3 个工作日内发货。香港、澳门地区 2-5 个工作日。偏远地区可能需要更长时间。', category: '物流配送' },
-  { id: '3', q: '如何申请退换货？', a: '请在收货后 7 天内提交退换申请。进入「我的查询」→ 点击「新建查询」→ 选择「退货申请」或「换货申请」，我们会尽快处理。', category: '退换货' },
-  { id: '4', q: '商品有色差或瑕疵怎么办？', a: '如收到的商品与描述严重不符或存在未标注的瑕疵，请在收货后 24 小时内联系我们并提供照片证据，我们会为您安排退换。', category: '退换货' },
-  { id: '5', q: '如何联系人工客服？', a: '工作时间可通过本页底部联系方式联系我们；非工作时间可提交工单，我们将在 24 小时内回复。', category: '其他' },
-  { id: '6', q: '支持哪些支付方式？', a: '支持 Visa、Mastercard、PayPal、支付宝、微信支付、银行转账等多种支付方式。', category: '支付问题' },
-];
-
 // ── Sub-components ────────────────────────────────────────────────────────────
 function StatusBadge({ status, label }: { status: SupportTicketStatus; label: string }) {
   const cls = status === 'open' ? styles.badgeOpen : status === 'in_progress' ? styles.badgeProgress : status === 'resolved' ? styles.badgeResolved : styles.badgeClosed;
   return <span className={`${styles.badge} ${cls}`}>{label}</span>;
 }
 
-function TicketCard({ ticket, t }: { ticket: import('../types/support').SupportTicket; t: typeof COPY.CN }) {
+function TicketCard({ ticket, t }: { ticket: import('../types/support').SupportTicket; t: typeof COPY[string] }) {
   const [open, setOpen] = useState(false);
   return (
     <div className={styles.ticketCard}>
@@ -136,32 +128,48 @@ function TicketCard({ ticket, t }: { ticket: import('../types/support').SupportT
   );
 }
 
-function FAQAccordion({ faqs }: { faqs: typeof FAQ_LIST }) {
+function FAQAccordion({ faqs, loading }: { faqs: SupportFAQ[]; loading: boolean }) {
   const [open, setOpen] = useState<string | null>(null);
+  if (loading) return <div className={styles.loading}>加载中...</div>;
+  if (faqs.length === 0) return <p className={styles.empty}>暂无常见问题</p>;
   return (
     <div className={styles.faqList}>
       {faqs.map(faq => (
         <div key={faq.id} className={`${styles.faqItem} ${open === faq.id ? styles.faqOpen : ''}`}>
           <button className={styles.faqQ} onClick={() => setOpen(id => id === faq.id ? null : faq.id)}>
             <span className={styles.faqCategory}>{faq.category}</span>
-            <span>{faq.q}</span>
+            <span>{faq.question}</span>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`${styles.faqChevron} ${open === faq.id ? styles.chevronOpen : ''}`}>
               <polyline points="6 9 12 15 18 9" />
             </svg>
           </button>
-          {open === faq.id && <p className={styles.faqA}>{faq.a}</p>}
+          {open === faq.id && <p className={styles.faqA}>{faq.answer}</p>}
         </div>
       ))}
     </div>
   );
 }
 
-// ── Main component ──────────────────────────────────────────────────────────────
+// ── Main component ─────────────────────────────────────────────────────────────
 export default function Support() {
   const { market } = useMarket();
   const t = COPY[market] ?? COPY.CN;
   const { tickets, loading, createTicket } = useSupport();
   const [activeTab, setActiveTab] = useState<'list' | 'new' | 'faq'>('list');
+  const [faqs, setFaqs] = useState<SupportFAQ[]>([]);
+  const [faqsLoading, setFaqsLoading] = useState(false);
+
+  // Load FAQs from backend
+  useEffect(() => {
+    if (activeTab === 'faq') {
+      setFaqsLoading(true);
+      supportApi.getFaqs()
+        .then(setFaqs)
+        .catch(() => setFaqs([]))
+        .finally(() => setFaqsLoading(false));
+    }
+  }, [activeTab]);
+
   const [orderSearch, setOrderSearch] = useState('');
   const [orderResult, setOrderResult] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -210,7 +218,6 @@ export default function Support() {
 
   return (
     <div className={styles.page}>
-      {/* Hero */}
       <div className={styles.hero}>
         <h1 className={styles.heroTitle}>{t.pageTitle}</h1>
         <p className={styles.heroSubtitle}>{t.pageSubtitle}</p>
@@ -218,9 +225,7 @@ export default function Support() {
 
       <div className={styles.container}>
         <div className={styles.layout}>
-          {/* Main content */}
           <div className={styles.main}>
-            {/* Tabs */}
             <div className={styles.tabs}>
               <button className={`${styles.tab} ${activeTab === 'list' ? styles.tabActive : ''}`} onClick={() => setActiveTab('list')}>
                 {t.tabs.myTickets}
@@ -236,7 +241,6 @@ export default function Support() {
             {/* Tab: My Tickets */}
             {activeTab === 'list' && (
               <div className={styles.tabContent}>
-                {/* Order search */}
                 <div className={styles.orderSearchBox}>
                   <h3 className={styles.sectionTitle}>{t.orderSection.title}</h3>
                   <div className={styles.orderSearchRow}>
@@ -257,7 +261,6 @@ export default function Support() {
                   )}
                 </div>
 
-                {/* Ticket list */}
                 {loading ? (
                   <div className={styles.loading}>加载中...</div>
                 ) : tickets.length === 0 ? (
@@ -348,18 +351,17 @@ export default function Support() {
             {activeTab === 'faq' && (
               <div className={styles.tabContent}>
                 <h3 className={styles.sectionTitle}>{t.faq.title}</h3>
-                <FAQAccordion faqs={FAQ_LIST} />
+                <FAQAccordion faqs={faqs} loading={faqsLoading} />
               </div>
             )}
           </div>
 
-          {/* Sidebar */}
           <aside className={styles.sidebar}>
             <div className={styles.contactCard}>
               <h3 className={styles.contactTitle}>{t.contact.title}</h3>
               <div className={styles.contactItem}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8a19.79 19.79 0 01-3.07-8.67A2 2 0 012 .84h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8.09a16 16 0 006 6l.81-.81a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
-                <a href={`tel:${t.contact.phone.replace(/-/g, '')}`}>{t.contact.phone}</a>
+                <a href={`tel:${t.contact.phone.replace(/\D/g, '')}`}>{t.contact.phone}</a>
               </div>
               <div className={styles.contactItem}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>

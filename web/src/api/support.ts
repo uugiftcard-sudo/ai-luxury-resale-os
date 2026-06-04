@@ -1,79 +1,111 @@
 /**
- * Support API — routes requests through mockStorage or Supabase.
- * Swap MOCK_MODE in supabase.ts to switch to real backend.
+ * Support API — calls the real backend Express API.
+ * Endpoints:
+ *   GET    /api/support/tickets
+ *   GET    /api/support/tickets/:id
+ *   POST   /api/support/tickets
+ *   PUT    /api/support/tickets/:id
+ *   GET    /api/support/tickets/:id/messages
+ *   POST   /api/support/tickets/:id/messages
+ *   GET    /api/support/faqs
+ *   POST   /api/support/faqs
  */
-import {
-  supportStorage,
-  StoredTicket,
-} from '../lib/mockStorage';
 import type {
   SupportTicket,
   SupportTicketFormData,
   SupportMessage,
+  SupportFAQ,
 } from '../types/support';
 
-function toTicket(s: StoredTicket): SupportTicket {
+const BASE = '/api/support';
+
+async function apiFetch<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const url = `${BASE}${path}`;
+  const res = await fetch(url, {
+    headers: { 'Content-Type': 'application/json', ...options.headers },
+    ...options,
+  });
+  const json = (await res.json()) as { success: boolean; data?: T; error?: string };
+  if (!res.ok || !json.success) {
+    throw new Error(json.error ?? `请求失败 (${res.status})`);
+  }
+  return json.data as T;
+}
+
+// ── Response shape normalisation ─────────────────────────────────────────────────
+
+// Raw shape returned by the backend
+interface RawSupportMessage {
+  id: string;
+  ticketId: string;
+  author: 'customer' | 'admin';
+  authorName: string;
+  message: string;
+  createdAt: string;
+}
+
+/** Backend sends `author`; frontend expects `sender`. */
+function toMessage(m: RawSupportMessage): SupportMessage {
   return {
-    id: s.id,
-    ticketNo: s.ticketNo,
-    type: s.type,
-    status: s.status,
-    subject: s.subject,
-    description: s.description,
-    orderId: s.orderId,
-    priority: s.priority,
-    customerName: s.customerName,
-    customerEmail: s.customerEmail,
-    customerPhone: s.customerPhone,
-    adminReply: s.adminReply,
-    createdAt: s.createdAt,
-    updatedAt: s.updatedAt,
+    id: m.id,
+    ticketId: m.ticketId,
+    sender: m.author,
+    message: m.message,
+    createdAt: m.createdAt,
   };
 }
 
 export const supportApi = {
   list(): Promise<SupportTicket[]> {
-    return Promise.resolve(supportStorage.getTickets().map(toTicket));
+    return apiFetch<SupportTicket[]>('/tickets');
   },
 
   getById(id: string): Promise<SupportTicket | null> {
-    const t = supportStorage.getTicketById(id);
-    return Promise.resolve(t ? toTicket(t) : null);
+    return apiFetch<SupportTicket>(`/tickets/${id}`);
   },
 
   create(form: SupportTicketFormData): Promise<SupportTicket> {
-    const ticket = supportStorage.createTicket({
-      type: form.type,
-      status: 'open',
-      subject: form.subject,
-      description: form.description,
-      orderId: form.orderId,
-      priority: 'normal',
-      customerName: form.customerName,
-      customerEmail: form.customerEmail,
-      customerPhone: form.customerPhone,
+    return apiFetch<SupportTicket>('/tickets', {
+      method: 'POST',
+      body: JSON.stringify({
+        type: form.type,
+        subject: form.subject,
+        description: form.description,
+        orderId: form.orderId,
+        customerName: form.customerName,
+        customerEmail: form.customerEmail,
+        customerPhone: form.customerPhone,
+      }),
     });
-    return Promise.resolve(toTicket(ticket));
   },
 
-  reply(id: string, message: string, sender: 'customer' | 'admin' = 'admin'): Promise<SupportMessage> {
-    const msg = supportStorage.addMessage({ ticketId: id, sender, message });
-    if (sender === 'admin') {
-      supportStorage.updateTicket(id, { adminReply: message, status: 'in_progress' });
-    }
-    return Promise.resolve(msg);
+  addMessage(ticketId: string, message: string, authorName: string): Promise<SupportMessage> {
+    return apiFetch<RawSupportMessage>(`/tickets/${ticketId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({
+        author: 'customer',
+        authorName,
+        message,
+      }),
+    }).then(toMessage);
   },
 
   resolve(id: string): Promise<SupportTicket | null> {
-    const t = supportStorage.updateTicket(id, { status: 'resolved' });
-    return Promise.resolve(t ? toTicket(t) : null);
+    return apiFetch<SupportTicket>(`/tickets/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status: 'resolved' }),
+    });
   },
 
   getMessages(ticketId: string): Promise<SupportMessage[]> {
-    return Promise.resolve(supportStorage.getMessages(ticketId));
+    return apiFetch<RawSupportMessage[]>(`/tickets/${ticketId}/messages`)
+      .then(msgs => msgs.map(toMessage));
   },
 
-  seedDemo(): void {
-    supportStorage.seedDemoTickets();
+  getFaqs(): Promise<SupportFAQ[]> {
+    return apiFetch<SupportFAQ[]>('/faqs');
   },
 };
