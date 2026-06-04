@@ -4,10 +4,13 @@
  */
 import { useState, useEffect } from 'react';
 import { productApi, orderApi } from '../api/client';
+import { inventorySyncApi } from '../api/inventorySync';
 import { useMarket } from '../hooks/useMarket';
 import type { Product, Order } from '../types';
 import { useToast } from '../hooks/useToast';
 import { ConfirmModal } from '../components/ConfirmModal/ConfirmModal';
+import AIAssist from '../components/AIAssist';
+import MarketSyncPanel from '../components/MarketSyncPanel';
 import styles from './Admin.module.css';
 
 // ==================== 辅助函数 ====================
@@ -78,12 +81,195 @@ function productToForm(p: Product): ProductFormData {
   };
 }
 
+// ==================== Market Sync Tab ====================
+function MarketSyncTab() {
+  const { showToast } = useToast();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkTarget, setBulkTarget] = useState<string[]>([]);
+
+  useEffect(() => {
+    productApi.list('CN' as never, { limit: 100 }).then(res => {
+      setProducts(res.data);
+    }).catch(err => {
+      setError(err instanceof Error ? err.message : '加载失败');
+    }).finally(() => setLoading(false));
+  }, []);
+
+  function toggleSelect(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAll() {
+    if (selectedIds.size === products.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(products.map(p => p.id)));
+    }
+  }
+
+  async function handleBulkSync() {
+    if (selectedIds.size === 0 || bulkTarget.length === 0) {
+      showToast('请选择商品和目标市场', 'error');
+      return;
+    }
+    try {
+      const result = await inventorySyncApi.bulkSync(Array.from(selectedIds), bulkTarget);
+      showToast(`${result.successCount}/${result.total} 商品同步成功`, 'success');
+      setSelectedIds(new Set());
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : '批量同步失败', 'error');
+    }
+  }
+
+  const syncTabStyles = styles as Record<string, string>;
+
+  if (loading) return <div className="loading-spinner"><div className="spinner" /></div>;
+  if (error) return <div className={syncTabStyles.errorBanner}>{error}</div>;
+
+  return (
+    <div>
+      {/* Summary Cards */}
+      <div className={syncTabStyles.syncSummary}>
+        {(['UK', 'HK', 'CN'] as const).map(m => {
+          const count = products.filter(p =>
+            p.marketSync?.some(s => s.market === m) || p.market === m || p.market === 'ALL'
+          ).length;
+          return (
+            <div key={m} className={syncTabStyles.syncCard}>
+              <div className={syncTabStyles.syncCardLabel}>{m === 'UK' ? '🇬🇧 UK' : m === 'HK' ? '🇭🇰 HK' : '🇨🇳 CN'}</div>
+              <div className={syncTabStyles.syncCardCount}>{count}</div>
+              <div className={syncTabStyles.syncCardSub}>件商品已同步</div>
+            </div>
+          );
+        })}
+        <div className={syncTabStyles.syncCard}>
+          <div className={syncTabStyles.syncCardLabel}>总计</div>
+          <div className={syncTabStyles.syncCardCount}>{products.length}</div>
+          <div className={syncTabStyles.syncCardSub}>件商品</div>
+        </div>
+      </div>
+
+      {/* Bulk Actions */}
+      <div className={syncTabStyles.toolbar}>
+        <div className={syncTabStyles.bulkActions}>
+          <label className={syncTabStyles.checkboxAll}>
+            <input
+              type="checkbox"
+              checked={selectedIds.size === products.length && products.length > 0}
+              onChange={toggleAll}
+            />
+            已选择 {selectedIds.size} 件
+          </label>
+          {selectedIds.size > 0 && (
+            <div className={syncTabStyles.bulkSync}>
+              <span style={{ fontSize: '13px', color: '#6b7280' }}>同步到:</span>
+              {(['UK', 'HK', 'CN'] as const).map(m => (
+                <label key={m} className={syncTabStyles.bulkMarketLabel}>
+                  <input
+                    type="checkbox"
+                    checked={bulkTarget.includes(m)}
+                    onChange={e => {
+                      if (e.target.checked) setBulkTarget(prev => [...prev, m]);
+                      else setBulkTarget(prev => prev.filter(x => x !== m));
+                    }}
+                  />
+                  {m}
+                </label>
+              ))}
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={handleBulkSync}
+                disabled={bulkTarget.length === 0}
+              >
+                批量同步
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Product Table */}
+      <div className={syncTabStyles.tableWrap}>
+        <table className={syncTabStyles.table}>
+          <thead>
+            <tr>
+              <th style={{ width: '32px' }}></th>
+              <th>商品</th>
+              <th>品牌</th>
+              <th>价格</th>
+              <th>市场同步</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {products.map(p => (
+              <tr key={p.id}>
+                <td>
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(p.id)}
+                    onChange={() => toggleSelect(p.id)}
+                  />
+                </td>
+                <td>
+                  <div className={syncTabStyles.productCell}>
+                    <img
+                      src={p.images[0] || 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=40'}
+                      alt={p.title}
+                      className={syncTabStyles.thumb}
+                    />
+                    <span className={syncTabStyles.productTitle}>{p.title}</span>
+                  </div>
+                </td>
+                <td>{p.brand}</td>
+                <td>¥{p.price.toLocaleString()}</td>
+                <td>
+                  <MarketSyncPanel
+                    productId={p.id}
+                    currentSync={p.marketSync}
+                    currentMarket="CN"
+                    compact
+                    onSyncUpdate={(updated) => {
+                      setProducts(prev => prev.map(prod =>
+                        prod.id === p.id ? { ...prod, marketSync: updated } : prod
+                      ));
+                    }}
+                  />
+                </td>
+                <td>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => {
+                      setSelectedIds(prev => new Set([...prev, p.id]));
+                      showToast(`已选择「${p.title}」`, 'info');
+                    }}
+                  >
+                    选中
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 // ==================== Admin Component ====================
 export default function Admin() {
   const { showToast } = useToast();
   const { market } = useMarket();
 
-  const [activeTab, setActiveTab] = useState<'products' | 'orders'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'market-sync'>('products');
 
   const [products, setProducts] = useState<Product[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
@@ -246,6 +432,17 @@ export default function Admin() {
             订单管理
             <span className={styles.badge}>{orders.length}</span>
           </button>
+          <button
+            className={`${styles.tab} ${activeTab === 'market-sync' ? styles.tabActive : ''}`}
+            onClick={() => setActiveTab('market-sync')}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="23 4 23 10 17 10"/>
+              <polyline points="1 20 1 14 7 14"/>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+            </svg>
+            市场同步
+          </button>
         </div>
 
         {activeTab === 'products' && (
@@ -371,13 +568,39 @@ export default function Admin() {
             )}
           </div>
         )}
+
+        {activeTab === 'market-sync' && (
+          <MarketSyncTab />
+        )}
       </div>
 
       {formOpen && (
         <div className="modal-overlay" onClick={() => setFormOpen(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '640px' }}>
             <div className={styles.modalHeader}>
-              <h2>{editingId ? '编辑商品' : '上架新商品'}</h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <h2>{editingId ? '编辑商品' : '上架新商品'}</h2>
+                {!editingId && (
+                  <AIAssist
+                    productData={{
+                      name: form.title,
+                      brand: form.brand,
+                      category: form.category,
+                      condition: form.condition,
+                      size: form.size,
+                      originalPrice: Number(form.originalPrice) || undefined,
+                    }}
+                    market={market}
+                    onApply={(content) => {
+                      setForm(f => ({
+                        ...f,
+                        title: content.title || f.title,
+                        description: content.description || f.description,
+                      }));
+                    }}
+                  />
+                )}
+              </div>
               <button className={styles.closeBtn} onClick={() => setFormOpen(false)}>×</button>
             </div>
             <form onSubmit={handleSubmit} className={styles.form}>
