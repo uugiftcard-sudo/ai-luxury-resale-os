@@ -18,6 +18,4 @@ vite.config.d.ts
 __pycache__/
 *.pyc
 packages/data/
-packages/data/
-packages/db/data/
 packages/db/data/
