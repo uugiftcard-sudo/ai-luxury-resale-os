@@ -290,6 +290,21 @@
 .loading { text-align: center; padding: 2rem; color: #999; font-size: 0.9rem; }
 .empty { text-align: center; padding: 2rem; color: #888; display: flex; flex-direction: column; align-items: center; gap: 1rem; }
 
+/* Local demo badge */
+.demoBanner {
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.82rem;
+  color: #856404;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+.demoBanner svg { flex-shrink: 0; margin-top: 0.1rem; }
+
 /* Sidebar */
 .sidebar { position: sticky; top: 1.5rem; }
 .contactCard {

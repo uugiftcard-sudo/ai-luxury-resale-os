@@ -10,6 +10,18 @@ import styles from './AdminWarehouse.module.css';
 
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_WAREHOUSE_PASSWORD || '';
 
+/** Local demo banner */
+function DemoBanner() {
+  return (
+    <div className={styles.demoBanner}>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span>此頁面為瀏覽器本地演示（localStorage），數據不會同步至服務器。如需正式功能，請聯絡管理員。</span>
+    </div>
+  );
+}
+
 export default function AdminWarehouse() {
   const { items, transactions, stats, createItem, updateItem, inbound, outbound } = useInventory();
   const [authenticated, setAuthenticated] = useState(false);
@@ -65,6 +77,8 @@ export default function AdminWarehouse() {
       </div>
 
       <div className={styles.container}>
+        <DemoBanner />
+
         {/* Quick stats */}
         <div className={styles.statsRow}>
           <div className={styles.statItem}><strong>{stats.totalSKUs}</strong><span>總 SKU</span></div>
